@@ -5,7 +5,10 @@ With the pgtokdb extension (SO) installed, the following is a gist of how it wor
 
 First, we create a Postgres function that wraps kdb_query. This particular function take a q-language expression that returns a simple table of two columns: i and j, 4-byte and 8-byte integers respectively.
 
-```create or replace function callkdb(varchar) returns table(i integer, j bigint) as '/usr/local/pgsql/lib/pgtokdb', 'kdb_query' language c immutable strict;```
+```
+create or replace function callkdb(varchar) returns table(i integer, j bigint) 
+    as '/usr/local/pgsql/lib/pgtokdb', 'kdb_query' language c immutable strict;
+```
 
 We have a q tiny function that returns a simple table. A kdb+ session is running listening on a configured port waiting for work.
 
