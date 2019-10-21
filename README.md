@@ -5,14 +5,14 @@ With the pgtokdb extension (SO) installed, the following is a gist of how it wor
 
 First, we create a Postgres function that wraps kdb_query. This particular function take a q-language expression that returns a simple table of two columns: i and j, 4-byte and 8-byte integers respectively.
 
-```
+```sql
 create or replace function callkdb(varchar) returns table(i integer, j bigint) 
     as '/usr/local/pgsql/lib/pgtokdb', 'kdb_query' language c immutable strict;
 ```
 
 We have a q tiny function that returns a simple table. A kdb+ session is running listening on a configured port waiting for work.
 
-```
+```q
 q)qfn[]
 i j  
 -----
@@ -23,7 +23,7 @@ i j
 
 Let's call that function from within Postgres. 
 
-```
+```sql
 select * from callkdb('qfn[]');
  i |  j  
 ---+-----
@@ -34,7 +34,7 @@ select * from callkdb('qfn[]');
 
 Below, we have a simple Postgres table that contains some code-description values, where the i column represent the code of, say, some piece of machinery.
 
-```
+```sql
 select * from code;
  i |     c      
 ---+------------
@@ -45,7 +45,7 @@ select * from code;
 
 Let's join the two table inside of Postgres. 
 
-```
+```sql
 select B.i, A.c, B.j from code A, callkdb('qfn[]') B where A.i = B.i;
  i |     c      |  j  
 ---+------------+-----
