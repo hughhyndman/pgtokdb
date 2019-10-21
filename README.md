@@ -1,3 +1,4 @@
+# PostgreSQL to kdb+ Extension
 This particular project is intended to integrate data in PostgreSQL with kdb+ data. While Postgres as excellent transactional support for reference/master data, kdb+ offers a high-performance solution to storing and analyzing large volumes of timeseries data. By allowing a developer to combined the data from both technologies through the standard interfaces that Postgres offers, this extension may be able to expedite the development of new solutions.
 
 With the pgtokdb extension (SO) installed, the following is a gist of how it works. The extension has an entry point named kdb_query, that handles communications between SQL and kdb+.
