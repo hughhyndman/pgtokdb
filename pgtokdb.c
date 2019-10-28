@@ -52,17 +52,18 @@ struct
 	Datum   (*k2p)(K, int);	/* Function to convert kdb+ to Postgres */
 	K		(*p2k)(Datum); 	/* Function to convert Postgres to kdb+ */
 	bool    isref;			/* Indicates whether Postgres Datum is a reference */
-} todt[9] =
+} todt[10] =
 {
-	{ BOOLOID,		k2p_bool,      p2k_bool,		false },
-	{ INT2OID,		k2p_int2,      p2k_int2,		false },
-	{ INT4OID,		k2p_int4,      p2k_int4,		false },
-	{ INT8OID,		k2p_int8,      p2k_int8,		false },
-	{ FLOAT4OID,	k2p_float4,    p2k_float4,		false },
-	{ FLOAT8OID,	k2p_float8,    p2k_float8,		false },
-	{ BPCHAROID,	k2p_char,      NULL,			false },
-	{ TIMESTAMPOID,	k2p_timestamp, p2k_timestamp,	false },
-	{ VARCHAROID,	k2p_varchar,   p2k_varchar,		true  }
+	{ BOOLOID,			k2p_bool,      p2k_bool,		false },
+	{ INT2OID,			k2p_int2,      p2k_int2,		false },
+	{ INT4OID,			k2p_int4,      p2k_int4,		false },
+	{ INT8OID,			k2p_int8,      p2k_int8,		false },
+	{ FLOAT4OID,		k2p_float4,    p2k_float4,		false },
+	{ FLOAT8OID,		k2p_float8,    p2k_float8,		false },
+	{ BPCHAROID,		k2p_char,      NULL,			false },
+	{ TIMESTAMPOID,		k2p_timestamp, p2k_timestamp,	false },
+	{ TIMESTAMPTZOID,	k2p_timestamp, p2k_timestamp,	false },
+	{ VARCHAROID,		k2p_varchar,   p2k_varchar,		true  }
 	/* ... add support for additional data types here ... */
 };
 
@@ -193,12 +194,12 @@ void pgtokdb_init(FunctionCallInfo fcinfo)
 	TupleDesc tupdesc;
 	TypeFuncClass tfc = get_call_result_type(fcinfo, NULL, &tupdesc);
 	if (tfc != TYPEFUNC_COMPOSITE)
-		elog(ERROR, "kdb: function must use composite types");
+		elog(ERROR, "Function must use composite types");
 
 	/* Connect to a kdb+ process */
 	I handle = khpu(host, port, userpass); 
 	if (handle <= 0)
-		elog(ERROR, "kdb: socket connection error: %d", handle);
+		elog(ERROR, "Socket connection error (%d) attempting to connect to kdb+", handle);
 
 	/* Get Postgres function arguments as a kdb+ array */
 	K args = getargs(fcinfo);
@@ -212,17 +213,17 @@ void pgtokdb_init(FunctionCallInfo fcinfo)
 
 	/* Ensure result is a simple (unkeyed) table */
 	if (!table)
-		elog(ERROR, "kdb: network error: %s", strerror(errno));
+		elog(ERROR, "Network error communicating with kdb+: %s", strerror(errno));
 	else if (-128 == table->t)
 	{
 		char *p = pstrdup(TX(S, table)); /* need to duplicate error string */
-		r0(table); /* before table gets deallocatd */
+		r0(table); /* before table gets deallocated */
 		elog(ERROR, "kdb: %s", p);
 	}
 	else if (XT != table->t)
 	{
 		r0(table);
-		elog(ERROR, "result is not a table");
+		elog(ERROR, "Result from kdb+ must be unkeyed table");
 	}
 
 	/* Generate attribute metadata needed later to produce tuples */
@@ -239,15 +240,16 @@ void pgtokdb_init(FunctionCallInfo fcinfo)
 	for (int i = 0; i < natts; i++)
 	{
 		/* Find matching kdb+ column */
-		int pos = findName(attinmeta->tupdesc->attrs[i].attname.data, colnames);
+		char *attname = attinmeta->tupdesc->attrs[i].attname.data;
+		int pos = findName(attname, colnames);
 		if (pos == -1)
-			elog(ERROR, "column not found (FIXME)");
+			elog(ERROR, "Unable to match column \"%s\" in kdb+ table", attname);
 		perm[i] = pos;
 
 		/* Find matching data type conversion */
 		pos = findOID(attinmeta->tupdesc->attrs[i].atttypid);
 		if (pos == -1)
-			elog(ERROR, "unsupport type");
+			elog(ERROR, "Extension does not support datatype in column \"%s\"", attname);
 		todtind[i] = pos;
 	}
 
@@ -272,7 +274,7 @@ K getargs(FunctionCallInfo fcinfo)
 	/* Get function definition tuple from Postgres */
 	HeapTuple tp = SearchSysCache1(PROCOID, ObjectIdGetDatum(funcid)); 
 	if (!HeapTupleIsValid(tp))
-		elog(ERROR, "cache lookup failed for function %u", funcid);
+		elog(ERROR, "Cache lookup failed for function %u", funcid);
 	Form_pg_proc procform = (Form_pg_proc) GETSTRUCT(tp); /* Copy tuple values */
 	ReleaseSysCache(tp);
 	int *pargoids = (int *) procform->proargtypes.values; /* Shorthand */
@@ -283,7 +285,7 @@ K getargs(FunctionCallInfo fcinfo)
 		elog(ERROR, "Function must have at least one argument");
 
 	if (pargoids[0] != VARCHAROID)
-		elog(ERROR, "Function first argument must be a varchar");
+		elog(ERROR, "Function first argument must be a varchar (kdb+ expression or function");
 
 	/* Initialize mixed K array (to be populated below) */
 	K lo = knk(nargs - 1, 0); 
@@ -294,7 +296,7 @@ K getargs(FunctionCallInfo fcinfo)
 
 		int ind = findOID(oid); /* Get data conversion */
 		if (ind < 0)
-			elog(ERROR, "argument %d uses an unsupport type (%d)", i, oid);
+			elog(ERROR, "Argument %d uses an unsupport type", i);
 
 		/* Call conversion routine via dispatch table */
 		kK(lo)[i - 1] = (todt[ind].p2k)(PG_GETARG_DATUM(i));
@@ -329,6 +331,8 @@ K kk(I h, char *f, K lo)
 		case 6: return k(h, f, p[0], p[1], p[2], p[3], p[4], p[5], (K) 0);
 		case 7: return k(h, f, p[0], p[1], p[2], p[3], p[4], p[5], p[6], (K) 0);
 		case 8: return k(h, f, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], (K) 0);
-		default: return 0;
+		default: 
+			elog(ERROR, "Maximum number of function arguments is 8");
+			return 0;
 	}
 }

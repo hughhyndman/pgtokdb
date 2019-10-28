@@ -44,7 +44,7 @@ K p2k_float8(Datum x)
 
 K p2k_timestamp(Datum x)
 {
-	return kj(DatumGetTimestamp(x)); //! not right
+	return ktj(-KP, 1000 * DatumGetTimestamp(x)); 
 }
 
 K p2k_varchar(Datum x)
@@ -57,6 +57,8 @@ K p2k_varchar(Datum x)
 
 /******************/
 
+static const char *k2p_error = "Unable to convert kdb+ column %d to %s";
+
 Datum k2p_int2(K c, int i)
 {
 	return Int16GetDatum(_k2p_int2(c, i));
@@ -68,7 +70,7 @@ int16 _k2p_int2(K c, int i)
 	{
 		case KC: return kC(c)[i];
 		case KH: return kH(c)[i]; 
-		default:elog(ERROR, "no conversion");
+		default:elog(ERROR, k2p_error, i, "smallint (int16))");
 	}
 }
 
@@ -84,7 +86,7 @@ int32 _k2p_int4(K c, int i)
 		case KC: return kC(c)[i];
 		case KH: return kH(c)[i]; 
 		case KI: return kI(c)[i];
-		default:elog(ERROR, "no conversion");
+		default:elog(ERROR, k2p_error, i, "integer (int32)");
 	}
 }
 
@@ -101,7 +103,7 @@ int64 _k2p_int8(K c, int i)
 		case KH: return kH(c)[i]; 
 		case KI: return kI(c)[i];
 		case KJ: return kJ(c)[i];
-		default:elog(ERROR, "no conversion");
+		default:elog(ERROR, k2p_error, i, "bigint (int64)");
 	}
 }
 
@@ -119,7 +121,7 @@ float _k2p_float4(K c, int i)
 		case KJ: return kJ(c)[i];
 		case KE: return kE(c)[i];
 		case KF: return kF(c)[i];
-		default:elog(ERROR, "no conversion");
+		default:elog(ERROR, k2p_error, i, "real (float4)");
 	}
 }
 
@@ -137,7 +139,7 @@ double _k2p_float8(K c, int i)
 		case KJ: return kJ(c)[i];
 		case KE: return kE(c)[i];
 		case KF: return kF(c)[i];
-		default:elog(ERROR, "no conversion");
+		default:elog(ERROR, k2p_error, i, "double precision (float8)");
 	}
 }
 
@@ -159,7 +161,7 @@ Datum k2p_varchar(K c, int i)
 		return (Datum) cstring_to_text(kS(c)[i]);
 	}
 
-	elog(ERROR, "no conversion");
+	elog(ERROR, k2p_error, i, "varchar");
 }
 
 
@@ -173,8 +175,8 @@ int64 _k2p_timestamp(K c, int i)
 	switch (c->t)
 	{
 		case KP: return kJ(c)[i] / 1000; //! Test this!
-		//! there are other variants to implement
-		default: elog(ERROR, "no conversion");
+		//! there are other variants to implement 
+		default: elog(ERROR, k2p_error, i, "timestamp");
 	}
 }
 
@@ -188,7 +190,7 @@ int _k2p_bool(K c, int i)
 	switch (c->t)
 	{
 		case KB: return kC(c)[i];
-		default: elog(ERROR, "no conversion");
+		default: elog(ERROR, k2p_error, i, "boolean");
 	}
 }
 
@@ -202,6 +204,6 @@ uint8 _k2p_char(K c, int i)
 	switch (c->t)
 	{
 		case KC: return kC(c)[i];
-		default: elog(ERROR, "no conversion");
+		default: elog(ERROR, k2p_error, i, "char"); //! not sure here
 	}
 }
