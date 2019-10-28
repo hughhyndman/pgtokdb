@@ -1,4 +1,5 @@
 pgtokdb.o
+convert.o
 .DS_Store
 pgtokdb.so
 m
