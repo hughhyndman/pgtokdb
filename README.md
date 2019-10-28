@@ -1,13 +1,13 @@
 # PostgreSQL to kdb+ Extension
 This particular project is intended to integrate data in PostgreSQL with [kdb+](https://en.wikipedia.org/wiki/Kdb%2B) data. While Postgres has excellent transactional support for reference/master data, kdb+ offers a high-performance solution to storing and analyzing large volumes of timeseries data. By allowing a developer to combined the data from both technologies through the standard interfaces that Postgres offers, this extension may be able to expedite the development of new solutions.
 
-With the pgtokdb extension (SO) installed, the following is a gist of how it works. The extension has an entry point named `kdb_query`, that handles communications between SQL and kdb+.
+With the pgtokdb extension (SO) installed, the following is a gist of how it works. The extension has an entry point (C function) named `pgtokdb`, that handles communications between SQL and kdb+.
 
 First, we create a Postgres function that wraps `kdb_query`. This particular function take a q-language expression that returns a simple table of two columns: i and j, 4-byte and 8-byte integers respectively.
 
 ```sql
 create or replace function callkdb(varchar) returns table(i integer, j bigint) 
-    as '/usr/local/pgsql/lib/pgtokdb', 'kdb_query' language c immutable strict;
+    as '/usr/local/pgsql/lib/pgtokdb', 'pgtokdb' language c immutable strict;
 ```
 
 We have a tiny q function defined that returns a simple table. A kdb+ session is running listening on a configured port waiting for work.
