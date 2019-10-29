@@ -13,6 +13,7 @@ PGXS := $(shell $(PG_CONFIG) --pgxs)
 include $(PGXS)
 
 # Ensure changes to the header file forces a build
+
 convert.o : convert.c pgtokdb.h
 
 pgtokdb.o : pgtokdb.c pgtokdb.h

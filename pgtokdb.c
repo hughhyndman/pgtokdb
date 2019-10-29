@@ -3,13 +3,14 @@
 /*
  * TODO List:
  *   - flesh out conversion variants
- *   - improve "no conversion errors"
  *   - char(1) maps to BPCHAROID (figure it out)
- *   - format and comment code following the PG standard
+ *   - returning a kdb+c and mapping to char(1) fails
  *   - document (in MD format)
  *   - test builds on WindowFs and Linux
+ *   - debug vs release builds
  *   - build regression suite
- *   - timestamp with time zone? 
+ *   - timestamp with time zone?  
+ *   - move de/allocation of dvalues and nulls UIFC (performance)
  *   - //! 
  */
 
@@ -28,7 +29,7 @@ static char host[256] = "localhost";
 static int port = 5000;
 static char userpass[256] = "";
 
-/* Function prototypes */
+/* Prototypes */
 void 	_PG_init(void);
 int 	findOID(int);
 int 	findName(char *, K);
@@ -103,7 +104,7 @@ void safecpy(char *dest, const char *src, size_t n)
 
 
 /* 
- * Initialize configuration variables upon loading of this extension (shared library)
+ * Initialize configuration variables upon loading of this extension (once only)
  */
 void _PG_init(void)
 {
