@@ -3,7 +3,7 @@ This particular project is intended to integrate data in PostgreSQL with [kdb+](
 
 With the pgtokdb extension (SO) installed, the following is a gist of how it works. The extension has an entry point (C function) named `pgtokdb`, that handles communications between SQL and kdb+.
 
-First, we create a Postgres function that wraps `kdb_query`. This particular function take a q-language expression that returns a simple table of two columns: i and j, 4-byte and 8-byte integers respectively.
+First, we create a Postgres function that wraps `pgtokdb`. This particular function take a q-language expression that returns a simple table of two columns: i and j, 4-byte and 8-byte integers respectively.
 
 ```sql
 create or replace function callkdb(varchar) returns table(i integer, j bigint) 
