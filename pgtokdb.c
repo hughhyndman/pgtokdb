@@ -2,16 +2,17 @@
 
 /*
  * TODO List:
- *   - flesh out conversion variants
- *   - char(1) maps to BPCHAROID (figure it out)
- *   - returning a kdb+c and mapping to char(1) fails
- *   - document (in MD format)
- *   - test builds on WindowFs and Linux
- *   - debug vs release builds
- *   - build regression suite
- *   - timestamp with time zone?  
- *   - move de/allocation of dvalues and nulls UIFC (performance)
- *   - //! 
+ *	- flesh out conversion variants
+ *	- returning a kdb+c and mapping to char(1) fails
+ *	- document (in MD format)
+ *	- test builds on WindowFs and Linux
+ *	- debug vs release builds
+ *	- build regression suite
+ *	- timestamp with time zone?  
+ *	- move de/allocation of dvalues and nulls UIFC (performance)
+ *	- distinguish varchar and char (BP, etc.)
+ 	- add support UUID (g), and b (bytea??)
+ *	- //! 
  */
 
 #include "pgtokdb.h"
@@ -53,18 +54,20 @@ struct
 	Datum   (*k2p)(K, int);	/* Function to convert kdb+ to Postgres */
 	K		(*p2k)(Datum); 	/* Function to convert Postgres to kdb+ */
 	bool    isref;			/* Indicates whether Postgres Datum is a reference */
-} todt[10] =
+} todt[12] =
 {
-	{ BOOLOID,			k2p_bool,      p2k_bool,		false },
-	{ INT2OID,			k2p_int2,      p2k_int2,		false },
-	{ INT4OID,			k2p_int4,      p2k_int4,		false },
-	{ INT8OID,			k2p_int8,      p2k_int8,		false },
-	{ FLOAT4OID,		k2p_float4,    p2k_float4,		false },
-	{ FLOAT8OID,		k2p_float8,    p2k_float8,		false },
-	{ BPCHAROID,		k2p_char,      NULL,			false },
-	{ TIMESTAMPOID,		k2p_timestamp, p2k_timestamp,	false },
-	{ TIMESTAMPTZOID,	k2p_timestamp, p2k_timestamp,	false },
-	{ VARCHAROID,		k2p_varchar,   p2k_varchar,		true  }
+	{ BOOLOID,			k2p_bool,     	p2k_bool,		false },
+	{ INT2OID,			k2p_int2,     	p2k_int2,		false },
+	{ INT4OID,			k2p_int4,     	p2k_int4,		false },
+	{ INT8OID,			k2p_int8,     	p2k_int8,		false },
+	{ FLOAT4OID,		k2p_float4,   	p2k_float4,		false },
+	{ FLOAT8OID,		k2p_float8,   	p2k_float8,		false },
+	{ BPCHAROID,		k2p_char,     	p2k_char,		false }, //!
+	{ TIMESTAMPOID,		k2p_timestamp,	p2k_timestamp,	false },
+	{ TIMESTAMPTZOID,	k2p_timestamp,	p2k_timestamp,	false },
+	{ VARCHAROID,		k2p_varchar,  	p2k_varchar,	true  },
+	{ DATEOID,			k2p_date,		p2k_date,		false },
+	{ UUIDOID,			NULL,			NULL,			false }
 	/* ... add support for additional data types here ... */
 };
 
@@ -333,7 +336,7 @@ K kk(I h, char *f, K lo)
 		case 7: return k(h, f, p[0], p[1], p[2], p[3], p[4], p[5], p[6], (K) 0);
 		case 8: return k(h, f, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], (K) 0);
 		default: 
-			elog(ERROR, "Maximum number of function arguments is 8");
+			elog(ERROR, "Maximum number of kdb+ function parameters is 8");
 			return 0;
 	}
 }

@@ -28,3 +28,9 @@ test4:{[b;h;i;j;e;f;p;cc]
 		res:-1 -5 -6 -7 -8 -9 -12 10h=type each (b;h;i;j;e;f;p;cc)
 		)
 	}
+
+test5:{[x] ([] c:2#x)}
+
+test6:{[x1;x2] ([] p1:2#x1; p2:2#x2)}
+
+test7:{ ([] d:.z.d+til 3)}

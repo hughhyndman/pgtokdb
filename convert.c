@@ -10,6 +10,7 @@ float	_k2p_float4(K, int);
 double	_k2p_float8(K, int);
 uint8	_k2p_char(K, int);
 int64	_k2p_timestamp(K, int);
+int32	_k2p_date(K, int);
 
 
 K p2k_bool(Datum x)
@@ -47,11 +48,22 @@ K p2k_timestamp(Datum x)
 	return ktj(-KP, 1000 * DatumGetTimestamp(x)); 
 }
 
+K p2k_date(Datum x)
+{
+	return kd(DatumGetInt32(x));
+}
+
 K p2k_varchar(Datum x)
 {
 	//! This isn't optimal. I should be able to get the string without going
 	//! through all the complications that text_to_cstring is performing.
 	return kp(text_to_cstring(DatumGetVarCharPP(x))); 
+}
+
+K p2k_char(Datum x)
+{
+	char *p = text_to_cstring(DatumGetBpCharPP(x));
+	return kc(*p);
 }
 
 
@@ -180,6 +192,20 @@ int64 _k2p_timestamp(K c, int i)
 	}
 }
 
+Datum k2p_date(K c , int i)
+{
+	return Int32GetDatum(_k2p_date(c, i));
+}
+
+int32 _k2p_date(K c, int i)
+{
+	switch (c->t)
+	{
+		case KD: return kI(c)[i];
+		default: elog(ERROR, k2p_error, i, "date");
+	}
+}
+
 Datum k2p_bool(K c, int i)
 {
 	return BoolGetDatum(_k2p_bool(c, i));
@@ -196,14 +222,8 @@ int _k2p_bool(K c, int i)
 
 Datum k2p_char(K c, int i)
 {
-	return Int8GetDatum(_k2p_char(c, i));
+	return k2p_varchar(c, i);
 }
 
-uint8 _k2p_char(K c, int i)
-{
-	switch (c->t)
-	{
-		case KC: return kC(c)[i];
-		default: elog(ERROR, k2p_error, i, "char"); //! not sure here
-	}
-}
+
+
