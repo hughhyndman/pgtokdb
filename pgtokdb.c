@@ -11,7 +11,7 @@
  *	- timestamp with time zone?  
  *	- move de/allocation of dvalues and nulls UIFC (performance)
  *	- distinguish varchar and char (BP, etc.)
- 	- add support UUID (g), and b (bytea??)
+ 	- add support b (bytea??)
  *	- //! 
  */
 
@@ -62,12 +62,12 @@ struct
 	{ INT8OID,			k2p_int8,     	p2k_int8,		false },
 	{ FLOAT4OID,		k2p_float4,   	p2k_float4,		false },
 	{ FLOAT8OID,		k2p_float8,   	p2k_float8,		false },
-	{ BPCHAROID,		k2p_char,     	p2k_char,		false }, //!
+	{ BPCHAROID,		k2p_char,     	p2k_char,		false }, //! deallocate?
 	{ TIMESTAMPOID,		k2p_timestamp,	p2k_timestamp,	false },
 	{ TIMESTAMPTZOID,	k2p_timestamp,	p2k_timestamp,	false },
 	{ VARCHAROID,		k2p_varchar,  	p2k_varchar,	true  },
 	{ DATEOID,			k2p_date,		p2k_date,		false },
-	{ UUIDOID,			NULL,			NULL,			false }
+	{ UUIDOID,			k2p_uuid,		p2k_uuid,		false }  //! deallocate?
 	/* ... add support for additional data types here ... */
 };
 

@@ -118,7 +118,20 @@ end;
 $$ language plpgsql;
 
 
-create type _fun as (id bigint, vals float8, ts timestamp, str varchar);
+--
+-- test8: UUID (g) type support
+--
+create or replace function run_test8() returns boolean as 
+$$ 
+begin
+	drop function if exists test8;
+	drop type if exists _test8;
+	create type _test8 as (g UUID);
+	create function test8(varchar, UUID) returns setof _test8 as 'pgtokdb', 'pgtokdb' language c immutable strict;
+	perform * from test8('test8', 'A0EEBC99-9C0B-4EF8-BB6D-6BB9BD380A11');
+	return true;
+end;
+$$ language plpgsql;
 
 
 -- select run_test1();

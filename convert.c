@@ -12,6 +12,10 @@ uint8	_k2p_char(K, int);
 int64	_k2p_timestamp(K, int);
 int32	_k2p_date(K, int);
 
+K p2k_uuid(Datum x)
+{
+	return ku(*(U *) DatumGetUUIDP(x));
+}
 
 K p2k_bool(Datum x)
 {
@@ -70,6 +74,14 @@ K p2k_char(Datum x)
 /******************/
 
 static const char *k2p_error = "Unable to convert kdb+ column %d to %s";
+
+Datum k2p_uuid(K c, int i)
+{
+	/* Since a UUID is 16 bytes, we need allocate space to the result from kdb+ */
+	pg_uuid_t *retval = palloc(sizeof(pg_uuid_t));
+	*retval = *(pg_uuid_t *) &kU(c)[i]; /* ugly assumption cast */
+	return PointerGetDatum(retval);
+}
 
 Datum k2p_int2(K c, int i)
 {

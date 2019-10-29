@@ -9,7 +9,9 @@
 #include <catalog/pg_type_d.h>
 #include <utils/timestamp.h>
 #include <utils/builtins.h>
+#include <utils/uuid.h>
 
+Datum k2p_uuid(K, int);
 Datum k2p_bool(K, int);
 Datum k2p_int2(K, int);
 Datum k2p_int4(K, int);
@@ -21,6 +23,7 @@ Datum k2p_varchar(K, int);
 Datum k2p_timestamp(K, int);
 Datum k2p_date(K, int);
 
+K p2k_uuid(Datum);
 K p2k_bool(Datum);
 K p2k_int2(Datum);
 K p2k_int4(Datum);
