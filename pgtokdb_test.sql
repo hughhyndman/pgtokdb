@@ -118,7 +118,7 @@ end;
 $$ language plpgsql;
 
 
-
+create type _fun as (id bigint, vals float8, ts timestamp, str varchar);
 
 
 -- select run_test1();
