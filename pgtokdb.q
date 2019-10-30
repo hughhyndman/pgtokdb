@@ -42,7 +42,7 @@ CFT:"create function %f(%a) returns setof _%f as 'pgtokdb','pgtokdb' language c 
 // script
 // -----------------------------------------------------------------------------------------------------------------------
 // "drop function if exists call_qfn;"
-// "drop type if exists call_qfn;"
+// "drop type if exists _call_qfn;"
 // "create type _call_qfn as (id bigint, val float8, ts timestamp);"
 // "create function call_qfn(varchar, integer) returns setof _call_qfn as 'pgtokdb','pgtokdb' language c immutable strict;""
 // 
@@ -75,7 +75,7 @@ genddl:{[fnname;argtypes;tblmeta]
 //                                                          script                                                         
 // ------------------------------------------------------------------------------------------------------------------------
 // drop function if exists call_qfn;
-// drop type if exists call_qfn;
+// drop type if exists _call_qfn;
 // create type _call_qfn as (id bigint, val float8, ts timestamp);
 // create function call_qfn(varchar, integer) returns setof _call_qfn as 'pgtokdb','pgtokdb' language c immutable strict;
 //
