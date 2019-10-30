@@ -22,6 +22,7 @@ Datum k2p_char(K, int);
 Datum k2p_varchar(K, int);
 Datum k2p_timestamp(K, int);
 Datum k2p_date(K, int);
+Datum k2p_bytea(K, int);
 
 K p2k_uuid(Datum);
 K p2k_bool(Datum);
@@ -34,5 +35,6 @@ K p2k_varchar(Datum);
 K p2k_timestamp(Datum);
 K p2k_char(Datum);
 K p2k_date(Datum);
+K p2k_bytea(Datum);
 
 #endif /* PKGTOKDB_H */

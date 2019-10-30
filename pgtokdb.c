@@ -3,15 +3,12 @@
 /*
  * TODO List:
  *	- flesh out conversion variants
- *	- returning a kdb+c and mapping to char(1) fails
  *	- document (in MD format)
  *	- test builds on WindowFs and Linux
  *	- debug vs release builds
  *	- build regression suite
- *	- timestamp with time zone?  
  *	- move de/allocation of dvalues and nulls UIFC (performance)
- *	- distinguish varchar and char (BP, etc.)
- 	- add support b (bytea??)
+ *	- add support b (bytea??)
  *	- //! 
  */
 
@@ -26,8 +23,8 @@
 PG_MODULE_MAGIC;
 
 /* Configuration globals */
-static char host[256] = "localhost";
-static int port = 5000;
+static char	host[256] = "localhost";
+static int	port = 5000;
 static char userpass[256] = "";
 
 /* Prototypes */
@@ -54,7 +51,7 @@ struct
 	Datum   (*k2p)(K, int);	/* Function to convert kdb+ to Postgres */
 	K		(*p2k)(Datum); 	/* Function to convert Postgres to kdb+ */
 	bool    isref;			/* Indicates whether Postgres Datum is a reference */
-} todt[12] =
+} todt[14] =
 {
 	{ BOOLOID,			k2p_bool,     	p2k_bool,		false },
 	{ INT2OID,			k2p_int2,     	p2k_int2,		false },
@@ -62,12 +59,14 @@ struct
 	{ INT8OID,			k2p_int8,     	p2k_int8,		false },
 	{ FLOAT4OID,		k2p_float4,   	p2k_float4,		false },
 	{ FLOAT8OID,		k2p_float8,   	p2k_float8,		false },
-	{ BPCHAROID,		k2p_char,     	p2k_char,		false }, //! deallocate?
+	{ BPCHAROID,		k2p_char,     	p2k_char,		true  },
 	{ TIMESTAMPOID,		k2p_timestamp,	p2k_timestamp,	false },
 	{ TIMESTAMPTZOID,	k2p_timestamp,	p2k_timestamp,	false },
 	{ VARCHAROID,		k2p_varchar,  	p2k_varchar,	true  },
 	{ DATEOID,			k2p_date,		p2k_date,		false },
-	{ UUIDOID,			k2p_uuid,		p2k_uuid,		false }  //! deallocate?
+	{ UUIDOID,			k2p_uuid,		p2k_uuid,		true  },
+	{ TEXTOID,			k2p_varchar,	p2k_varchar,	true  },
+	{ BYTEAOID,			k2p_bytea,		p2k_bytea,		true  }
 	/* ... add support for additional data types here ... */
 };
 

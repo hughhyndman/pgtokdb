@@ -70,16 +70,45 @@ K p2k_char(Datum x)
 	return kc(*p);
 }
 
+K p2k_bytea(Datum x)
+{
+	int n = VARSIZE(x) - VARHDRSZ; /* Length of bytea array */
+	K bytelist = ktn(KG, n); /* Create a kdb+ byte list */
+	memcpy(kG(bytelist), VARDATA(x), n); /* Copy data from Datum to K */
+	return bytelist; 
+}
+
 
 /******************/
 
 static const char *k2p_error = "Unable to convert kdb+ column %d to %s";
 
+Datum k2p_bytea(K c, int i)
+{
+	if (c->t == 0) /* If a list */
+	{
+		K p = kK(c)[i];
+		if (p->t == KG) /* If byte type */
+		{
+			unsigned char *bytes = (unsigned char *) kG(p);
+			int n = p->n; /* Length of byte list */
+			int datumlen = VARHDRSZ + n; 
+			bytea *datum = (bytea *) palloc(datumlen);
+			SET_VARSIZE(datum, datumlen);
+			memcpy(VARDATA(datum), bytes, n);
+			return(PointerGetDatum(datum));
+		}
+	}
+
+	elog(ERROR, k2p_error, i, "bytea");
+}
+
 Datum k2p_uuid(K c, int i)
 {
 	/* Since a UUID is 16 bytes, we need allocate space to the result from kdb+ */
 	pg_uuid_t *retval = palloc(sizeof(pg_uuid_t));
-	*retval = *(pg_uuid_t *) &kU(c)[i]; /* ugly assumption cast */
+	Assert(sizeof(pg_uuid_t) == sizeof(U));
+	*retval = *(pg_uuid_t *) &kU(c)[i]; /* cast making an ugly assumption */
 	return PointerGetDatum(retval);
 }
 

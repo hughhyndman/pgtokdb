@@ -133,6 +133,37 @@ begin
 end;
 $$ language plpgsql;
 
+--
+-- test9: text (C) type support
+--
+create or replace function run_test9() returns boolean as 
+$$ 
+begin
+	drop function if exists test9;
+	drop type if exists _test9;
+	create type _test9 as (tt text);
+	create function test9(varchar, text) returns setof _test9 as 'pgtokdb', 'pgtokdb' language c immutable strict;
+	perform * from test9('test9', 'Here is some text');
+	return true;
+end;
+$$ language plpgsql;
+
+
+--
+-- test10: text (C) type support
+--
+create or replace function run_test10() returns boolean as 
+$$ 
+begin
+	drop function if exists test10;
+	drop type if exists _test10;
+	create type _test10 as (xx bytea);
+	create function test10(varchar, bytea) returns setof _test10 as 'pgtokdb', 'pgtokdb' language c immutable strict;
+	perform * from test10('test10', '\xBAADF00D');
+	return true;
+end;
+$$ language plpgsql;
+
 
 -- select run_test1();
 -- select run_test2();

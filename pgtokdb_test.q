@@ -33,6 +33,10 @@ test5:{[x] ([] c:2#x)}
 
 test6:{[x1;x2] ([] p1:2#x1; p2:2#x2)}
 
-test7:{ ([] d:.z.d+til 3)}
+test7:{ ([] d:.z.d+til 2)}
 
-test8:{[x] ([] g:1#x)}
+test8:{[x] ([] g:2#x)}
+
+test9:{[x] ([] tt:2#enlist x)}
+
+test10:{[x] ([] xx:2#enlist x)}
