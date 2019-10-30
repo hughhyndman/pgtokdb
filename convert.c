@@ -59,8 +59,6 @@ K p2k_date(Datum x)
 
 K p2k_varchar(Datum x)
 {
-	//! This isn't optimal. I should be able to get the string without going
-	//! through all the complications that text_to_cstring is performing.
 	return kp(text_to_cstring(DatumGetVarCharPP(x))); 
 }
 
@@ -96,20 +94,23 @@ Datum k2p_bytea(K c, int i)
 			bytea *datum = (bytea *) palloc(datumlen);
 			SET_VARSIZE(datum, datumlen);
 			memcpy(VARDATA(datum), bytes, n);
-			return(PointerGetDatum(datum));
+			return PointerGetDatum(datum);
 		}
 	}
-
 	elog(ERROR, k2p_error, i, "bytea");
 }
 
 Datum k2p_uuid(K c, int i)
 {
-	/* Since a UUID is 16 bytes, we need allocate space to the result from kdb+ */
-	pg_uuid_t *retval = palloc(sizeof(pg_uuid_t));
-	Assert(sizeof(pg_uuid_t) == sizeof(U));
-	*retval = *(pg_uuid_t *) &kU(c)[i]; /* cast making an ugly assumption */
-	return PointerGetDatum(retval);
+	if (c->t == UU)
+	{	
+		/* A UUID is 16 bytes; we need allocate space to the result from kdb+ */
+		pg_uuid_t *retval = palloc(sizeof(pg_uuid_t));
+		Assert(sizeof(pg_uuid_t) == sizeof(U));
+		*retval = *(pg_uuid_t *) &kU(c)[i]; 
+		return PointerGetDatum(retval);
+	}
+	elog(ERROR, k2p_error, i, "UUID");
 }
 
 Datum k2p_int2(K c, int i)
@@ -199,12 +200,16 @@ double _k2p_float8(K c, int i)
 //! cleanup
 Datum k2p_varchar(K c, int i)
 {
-	if (c->t == 0)
+	if (c->t == 0) /* If a list */
 	{
 		K p = kK(c)[i];
-		char *s = (char *) kC(p);
-		int n = p->n;
-		return (Datum) cstring_to_text_with_len(s, n);
+		if (p->t == KC) /* and a character list */
+		{
+			char *s = (char *) kC(p);
+			int n = p->n;
+			return (Datum) cstring_to_text_with_len(s, n);
+		} 
+		/* Falling through to error at end */
 	} else if (c->t == KC)
 	{
 		char x = kC(c)[i];
@@ -227,8 +232,7 @@ int64 _k2p_timestamp(K c, int i)
 {
 	switch (c->t)
 	{
-		case KP: return kJ(c)[i] / 1000; //! Test this!
-		//! there are other variants to implement 
+		case KP: return kJ(c)[i] / 1000; /* Remove nanoseconds */
 		default: elog(ERROR, k2p_error, i, "timestamp");
 	}
 }

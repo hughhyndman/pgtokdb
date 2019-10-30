@@ -8,8 +8,6 @@
  *	- debug vs release builds
  *	- build regression suite
  *	- move de/allocation of dvalues and nulls UIFC (performance)
- *	- add support b (bytea??)
- *	- //! 
  */
 
 #include "pgtokdb.h"
@@ -76,7 +74,7 @@ struct
  */
 int findOID(int oid)
 {
-	for (int i = 0; i < sizeof(todt)/sizeof(todt[0]); i++)
+	for (int i = 0; i < sizeof(todt) / sizeof(todt[0]); i++)
 		if (todt[i].typeoid == oid)
 			return i;
 	return -1;
@@ -124,7 +122,6 @@ void _PG_init(void)
 
 
 PG_FUNCTION_INFO_V1(pgtokdb);
-
 
 /* 
  * Entry point from Postgres 

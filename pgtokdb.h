@@ -18,9 +18,9 @@ Datum k2p_int4(K, int);
 Datum k2p_int8(K, int);
 Datum k2p_float4(K, int);
 Datum k2p_float8(K, int);
-Datum k2p_char(K, int);
 Datum k2p_varchar(K, int);
 Datum k2p_timestamp(K, int);
+Datum k2p_char(K, int);
 Datum k2p_date(K, int);
 Datum k2p_bytea(K, int);
 
