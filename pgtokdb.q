@@ -54,7 +54,7 @@ genddl:{[fnname;argtypes;tblmeta]
 	c:2_raze ", ",/:string[key[tblmeta]`c],'" ",/:KPTM[value[tblmeta]`t]; 
 	script:();
 	script,:enlist ssr[DFT;"%f";fnname];
-	script,:enlist ssr[DTT;"_%f";fnname];
+	script,:enlist ssr[DTT;"%f";fnname];
 	script,:enlist ssr/[CTT;2#v:"%",/:"fca";2#r:(fnname;c;a)];
 	script,:enlist ssr/[CFT;v;r];
 	([] script)
