@@ -67,11 +67,9 @@ genddl:{[fnname;argtypes;tblmeta]
 // @param argtypes	{string}	- Kdb+ datatypes of arguments
 // @param tblmetaexpr {string}	- Executable string that returns the meta
 //
-// @example .pg.genddle["call_qfn";"i";"meta qfn[1]"]
+// @example
 //
-// pg# create type _genddl as (script varchar); 
-// pg# create function genddl(varchar, varchar, varchar, varchar) returns setof _genddl as 'pgtokdb', 'pgtokdb' language c immutable strict; 
-// pg# select * from genddl('.pg.genddle', call_qfn','i','meta qfn[1]');
+// pg# select * from pgtokdb.genddl('.pg.genddle', call_qfn','i','meta qfn[1]');
 //                                                          script                                                         
 // ------------------------------------------------------------------------------------------------------------------------
 // drop function if exists call_qfn;

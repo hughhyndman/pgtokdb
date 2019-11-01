@@ -1,7 +1,12 @@
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
 \echo Use "CREATE EXTENSION pgtokdb" to load this file. \quit
 
-create or replace function test(varchar) returns table(i integer, j bigint)
-	as '/usr/local/pgsql/lib/pgtokdb', 'kdb_query' language c immutable strict;
+create schema if not exists pgtokdb;
 
-select * from test('([] i:1 2 3i; j:100 200 300)');
+drop type if exists pgtokdb._genddl cascade;
+
+create type pgtokdb._genddl as (script varchar);
+
+create function pgtokdb.genddl(varchar, varchar, varchar, varchar) 
+	returns setof pgtokdb._genddl 
+	as 'pgtokdb', 'pgtokdb' language c immutable strict; 
