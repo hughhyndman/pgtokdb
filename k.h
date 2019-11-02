@@ -92,7 +92,7 @@ extern double log(double);
 #else
 #define nf (0/0.0)
 #define wf (1/0.0)
-#define closesocket(x) close(x)
+// #define closesocket(x) close(x)
 #endif
 
 // remove more clutter
