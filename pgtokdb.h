@@ -1,15 +1,15 @@
 #ifndef PGTOKDB_H
 #define PGTOKDB_H
 
-#define KXVER 3
-#include "k.h"
-#undef closesocket 
-
 #include <postgres.h>
 #include <catalog/pg_type_d.h>
 #include <utils/timestamp.h>
 #include <utils/builtins.h>
 #include <utils/uuid.h>
+
+#define KXVER 3
+#include "k.h"
+
 
 Datum k2p_uuid(K, int);
 Datum k2p_bool(K, int);

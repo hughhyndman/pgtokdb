@@ -6,9 +6,10 @@ REGRESS = pgtokdb_test		# our test script file (without extension)
 #
 # Pick up configuration parameters from Postgres
 #
-PG_CONFIG = pg_config
+PG_CONFIG = pg_config # configuration script file
 
 PKGLIBDIR = $(shell $(PG_CONFIG) --pkglibdir)
+LIBDIR = $(shell $(PG_CONFIG) --libdir)
 SHAREDIR = $(shell $(PG_CONFIG) --sharedir)
 BINDIR = $(shell $(PG_CONFIG) --bindir)
 I1 = -I$(shell $(PG_CONFIG) --includedir-server)
@@ -33,11 +34,12 @@ CWARNINGS = -Wall -Wmissing-prototypes -Wpointer-arith -Wmissing-format-attribut
 
 ifeq ($(OS), mac)
 	CFLAGS = $(DFLAGS) $(INCLUDE) $(CWARNINGS) -c 
-	LFLAGS = -L/usr/local/pgsql/lib -bundle -bundle_loader /usr/local/pgsql/bin/postgres
+	LFLAGS = -L$(LIBDIR) -bundle -bundle_loader $(BINDIR)/postgres
 else ifeq ($(OS), linux)
 	CFLAGS = -fPIC $(DFLAGS) $(INCLUDE) $(CWARNINGS) -c 
-	LFLAGS = -L/usr/local/pgsql/lib -shared
+	LFLAGS = -L$(LIBDIR) -shared
 endif
+
 
 all: pgtokdb.so
 

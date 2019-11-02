@@ -1,0 +1,41 @@
+PGROOT = c:\pgsql-12
+
+PKGLIBDIR = $(PGROOT)\lib
+INCLUDEDIR = $(PGROOT)\include
+SHAREDIR = $(PGROOT)\share
+LIBDIR = $(PGROOT)\lib
+
+# clang is part of Visual Studio 2019
+CC = "c:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\Llvm\bin\clang.exe"
+
+#
+# Turn off some warning arise out of Microsoft header files
+#
+WARNINGS = -Wall -Wno-unused-parameter -Wno-incompatible-pointer-types \
+	-Wno-pointer-sign -Wno-deprecated-declarations
+
+CFLAGS = -c -m64 $(WARNINGS) \
+	-I$(INCLUDEDIR)\server\port\win32_msvc \
+	-I$(INCLUDEDIR)\server\port\win32 \
+	-I$(INCLUDEDIR)\server \
+	-I$(INCLUDEDIR)
+
+convert.o: convert.c
+	$(CC) $(CFLAGS) convert.c
+
+pgtokdb.o: pgtokdb.c
+	$(CC) $(CFLAGS) pgtokdb.c
+
+pgtokdb.dll: convert.o pgtokdb.o
+	$(CC) -shared pgtokdb.o convert.o -L$(LIBDIR) -lpostgres -o  pgtokdb.dll windows/c.lib
+
+all: pgtokdb.dll
+
+clean:
+	del pgtokdb.dll pgtokdb.o convert.o
+
+install: pgtokdb.dll
+	xcopy /y pgtokdb.dll $(PKGLIBDIR)
+	xcopy /y pgtokdb.control $(SHAREDIR)\extension
+	xcopy /y pgtokdb--0.0.1.sql $(SHAREDIR)\extension
+	@echo "IMPORTANT: windows\c.dll has to be placed in the path"

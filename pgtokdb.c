@@ -126,7 +126,7 @@ PG_FUNCTION_INFO_V1(pgtokdb);
 /* 
  * Entry point from Postgres 
  */
-Datum pgtokdb(PG_FUNCTION_ARGS)
+PGDLLEXPORT Datum pgtokdb(PG_FUNCTION_ARGS)
 {
 	/* Initialize on first call */
 	if (SRF_IS_FIRSTCALL())
