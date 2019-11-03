@@ -110,18 +110,18 @@ void _PG_init(void)
 {
 	const char *p;
 	
-	if ((p = GetConfigOption("kdb.host", true, false)) != NULL)
+	if ((p = GetConfigOption("pgtokdb.host", true, false)) != NULL)
 		safecpy(host, p, sizeof(host));
 
-	if ((p = GetConfigOption("kdb.port", true, false)) != NULL)
+	if ((p = GetConfigOption("pgtokdb.port", true, false)) != NULL)
 		port = atoi(p);
 
-	if ((p = GetConfigOption("kdb.userpass", true, false)) != NULL)
+	if ((p = GetConfigOption("pgtokdb.userpass", true, false)) != NULL)
 		safecpy(userpass, p, sizeof(userpass));
 }
 
 
-PG_FUNCTION_INFO_V1(pgtokdb);
+PG_FUNCTION_INFO_CUSTOM(pgtokdb); /* A variant of PG_FUNCTION_INFO_V1 */
 
 /* 
  * Entry point from Postgres 

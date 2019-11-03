@@ -1,3 +1,11 @@
+/* 
+ * This include file is a reformatted version of k.h from Kx Systems. The
+ * definition of the macro "closesocket" is commented out since there were
+ * conflicts when building a Postgres extension across platforms.
+ *
+ * The old KXVER<3 includes were removed
+ */
+
 #ifndef KX
 #define KX
 
@@ -14,11 +22,6 @@ typedef void V;
 extern"C" {
 #endif
 
-#if !defined(KXVER)
-#error "Set KXVER=3 for kdb+3.0 or standalone c-api after 2011-04-20. Otherwise set KXVER=2. e.g. #define KXVER 3 or gcc -DKXVER=3"
-#endif
-    
-#if KXVER>=3
 typedef struct k0
 {
     signed char m, a, t;
@@ -45,39 +48,18 @@ typedef struct
 {
     G g[16];
 } U;
+
 #define kU(x) ((U*)kG(x))
 #define xU ((U*)xG)
 extern K ku(U), knt(J, K), ktn(I, J), kpn(S, J);
 extern I setm(I), ver();
 #define DO(n,x)    {J i=0,_i=(n);for(;i<_i;++i){x;}}
-#else
-typedef struct k0
-{
-    I r;
-    H t, u;
-    union
-    {
-        G g;
-        H h;
-        I i;
-        J j;
-        E e;
-        F f;
-        S s;
-        struct k0 *k;
-        struct
-        {
-            I n;
-            G G0[1];
-        };
-    };
-} *K;
-extern K ktn(I, I), kpn(S, I);
-#define DO(n,x)    {I i=0,_i=(n);for(;i<_i;++i){x;}}
-#endif
+
+
 #ifdef __cplusplus
 }
 #endif
+
 //#include<string.h>
 // vector accessors, e.g. kF(x)[i] for float&datetime
 #define kG(x)    ((x)->G0)
@@ -119,12 +101,13 @@ extern K ktn(I, I), kpn(S, I);
 
 #ifdef __cplusplus
 #include<cstdarg>
-extern"C" {
+extern "C" {
 extern V m9();
 #else
 #include<stdarg.h>
 extern V m9(V);
 #endif
+
 extern I khpunc(S, I, S, I, I),
     khpun(const S, I, const S, I), 
     khpu(const S, I, const S), 
@@ -140,6 +123,7 @@ extern K ee(K), ktj(I, J), ka(I), kb(I), kg(I), kh(I), ki(I), kj(J), ke(F),
     k(I, const S, ...), xT(K), xD(K, K), ktd(K), r1(K), krr(const S), 
     orr(const S), dot(K, K), b9(I, K), d9(K), sslInfo(K x), vaknk(I, va_list), 
     vak(I, const S, va_list);
+
 #ifdef __cplusplus
 }
 #endif

@@ -10,6 +10,21 @@
 #define KXVER 3
 #include "k.h"
 
+/*
+ * Redefine this PG_FUNCTION_INFO_V1 (found in PG's include\fmgr.h) so that 
+ * funcname is declared with PGDLLEXPORT -- which is required for a Windows build.
+ */
+#define PG_FUNCTION_INFO_CUSTOM(funcname) \
+extern PGDLLEXPORT Datum funcname(PG_FUNCTION_ARGS); \
+extern PGDLLEXPORT const Pg_finfo_record * CppConcat(pg_finfo_,funcname)(void); \
+const Pg_finfo_record * \
+CppConcat(pg_finfo_,funcname) (void) \
+{ \
+	static const Pg_finfo_record my_finfo = { 1 }; \
+	return &my_finfo; \
+} \
+extern int no_such_variable
+
 
 Datum k2p_uuid(K, int);
 Datum k2p_bool(K, int);

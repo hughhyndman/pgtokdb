@@ -9,7 +9,16 @@ LIBDIR = $(PGROOT)\lib
 CC = "c:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\Llvm\bin\clang.exe"
 
 #
-# Turn off some warning arise out of Microsoft header files
+# Set compile flags depending on whether we have a debug or release (non-debug) build
+#
+!if "$(DEBUG)" == "1"
+DFLAGS = -g 
+!else
+DFLAGS = -O3
+!endif
+
+#
+# Turn off some warnings that arise out of Microsoft header files
 #
 WARNINGS = -Wall -Wno-unused-parameter -Wno-incompatible-pointer-types \
 	-Wno-pointer-sign -Wno-deprecated-declarations
@@ -27,7 +36,7 @@ pgtokdb.o: pgtokdb.c
 	$(CC) $(CFLAGS) pgtokdb.c
 
 pgtokdb.dll: convert.o pgtokdb.o
-	$(CC) -shared pgtokdb.o convert.o -L$(LIBDIR) -lpostgres -o  pgtokdb.dll windows/c.lib
+	$(CC) $(DFLAGS) -shared pgtokdb.o convert.o -L$(LIBDIR) -lpostgres -o  pgtokdb.dll windows/c.lib
 
 all: pgtokdb.dll
 
@@ -38,4 +47,4 @@ install: pgtokdb.dll
 	xcopy /y pgtokdb.dll $(PKGLIBDIR)
 	xcopy /y pgtokdb.control $(SHAREDIR)\extension
 	xcopy /y pgtokdb--0.0.1.sql $(SHAREDIR)\extension
-	@echo "IMPORTANT: windows\c.dll has to be placed in the path"
+	@echo "IMPORTANT: windows\c.dll must be placed in the PATH"
