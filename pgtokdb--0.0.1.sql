@@ -4,8 +4,8 @@ create schema if not exists pgtokdb;
 
 drop type if exists pgtokdb._genddl cascade;
 
-create type pgtokdb._genddl as (script varchar);
+create type pgtokdb.genddl_t as (script varchar);
 
 create function pgtokdb.genddl(varchar, varchar, varchar, varchar) 
-	returns setof pgtokdb._genddl 
-	as 'pgtokdb', 'pgtokdb' language c immutable strict; 
+	returns setof pgtokdb.genddl_t 
+	as 'pgtokdb', 'getset' language c; 

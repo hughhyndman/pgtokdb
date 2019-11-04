@@ -1,13 +1,13 @@
 # PostgreSQL to kdb+ Extension
 This particular project is intended to integrate data in PostgreSQL with [kdb+](https://en.wikipedia.org/wiki/Kdb%2B) data. While Postgres has excellent transactional support for reference/master data, kdb+ offers a high-performance solution to storing and analyzing extreme volumes of timeseries data. By allowing a developer to combined the data from both technologies through the standard interfaces that Postgres offers, this extension expedites the development of new solutions.
 
-With the pgtokdb extension (shared library or DLL) installed, the following is a gist of how it works. The extension has an entry point (a C function) named `pgtokdb`, that handles communications between SQL and kdb+.
+With the pgtokdb extension (shared library or DLL) installed, the following is a gist of how it works. The extension has an entry point (a C function) named `getset` (a SRF: Set Returning Function), that handles communications between SQL and kdb+.
 
-First, we create a Postgres function that wraps `pgtokdb`. This particular function take a q-language expression that returns a simple table of two columns: i and j, 4-byte and 8-byte integers respectively.
+First, we create a Postgres function that wraps `getset`. This particular function takes a q-language expression that returns a simple table of two columns: i and j, 4-byte and 8-byte integers respectively.
 
 ```sql
 create or replace function callkdb(varchar) returns table(i integer, j bigint) 
-    as 'pgtokdb', 'pgtokdb' language c immutable strict;
+    as 'pgtokdb', 'getset' language c;
 ```
 
 We have a tiny q function defined that returns a simple table. A kdb+ session is running listening on a configured port waiting for work.
@@ -71,10 +71,9 @@ fun:{[numrows]
 In Postgres, we create a type that maps to the names and data types of the kdb+ function result. Also, we create a function that connects everything. Finally, we make the call from within psql.
 
 ```sql
-create type _fun as (id bigint, vals float8, ts timestamp, str varchar);
+create type callfun_t as (id bigint, vals float8, ts timestamp, str varchar);
 
-create function callfun(varchar, integer) returns setof _fun as
-    as 'pgtokdb', 'pgtokdb' language c immutable strict;
+create function callfun(varchar, integer) returns setof callfun_t as 'pgtokdb', 'getset' language c;
 
 select * from callfun('fun', 10);
 
@@ -116,7 +115,7 @@ The extension does support up-casting to data types where there won't be any dat
 ## Utilities
 Writing wrapper Postgres function and types to specific kdb+ queries is cumbersome, so convenenient utility functions (both kdb+ and Postgres) are provided with the installation.
 
-The kdb+ utilities (`genddl` and `genddle`) are found in the installations `pgtokdb.q` script and are placed in the `.pg` namespace. 
+The kdb+ utilities (`genddl` and `genddle`) are found in the installations `pgtokdb.q` script and are placed in the `.pgtokdb` namespace. 
 
 The example below uses a function (`qfn`) that takes an integer argument, and returns a kdb+ table with 3 columns: a long (j), float (f), and timestamp (p). We want to build the necessary Postgres function that can call this function.
 
@@ -126,14 +125,14 @@ q) qfn:{[n] ([] id:til n; val:n?9999.99; ts:2019.10.01D0+1D*til n)}
 The `genddl` function (Generate Data Definition Language), takes three arguments: the name of the Postgres function to be created, the kdb+ data type codes of the kdb+ functon arguments, and the meta of the function result.
 
 ```
-q) ddl:.pg.genddl["call_qfn";"i";meta qfn[1]]
+q) ddl:.pgtokdb.genddl["call_qfn";"i";meta qfn[1]]
 q) ddl
 script
 -----------------------------------------------------------------------------------------------------------------------
 "drop function if exists call_qfn;"
-"drop type if exists _call_qfn;"
-"create type _call_qfn as (id bigint, val float8, ts timestamp);"
-"create function call_qfn(varchar, integer) returns setof _call_qfn as 'pgtokdb','pgtokdb' language c immutable strict;"
+"drop type if exists _call_qfn_t;"
+"create type call_qfn_t as (id bigint, val float8, ts timestamp);"
+"create function call_qfn(varchar, integer) returns setof _call_qfn_t as 'pgtokdb','getset' language c;"
 ```
 The result is a table containing the necessary DDL scripts. The table's contents can be stored in a text file for execution using psql. Note that the first argument to `call_qfn` above is the kdb+ function (or script) to be invoked.
 
@@ -149,12 +148,12 @@ postgres=# \i /tmp/gen.sql
 We can invoke a variant of `genddl` (i.e., `genddle`) from within a psql session by using the `pgtokdb.gendll` Postgres function. The difference is that the (string) expression that generates the meta is provided.
 
 ```
-postgres=# select * from pgtokdb.genddl('.pg.genddle', 'call_qfn','i','meta qfn[1]');                                                          script                                                         
+postgres=# select * from pgtokdb.genddl('.pgtokdb.genddle', 'call_qfn','i','meta qfn[1]');                                                          script                                                         
 ------------------------------------------------------------------------------------------------------------------------
 drop function if exists call_qfn;
-drop type if exists _call_qfn;
-create type _call_qfn as (id bigint, val float8, ts timestamp);
-create function call_qfn(varchar, integer) returns setof _call_qfn as 'pgtokdb','pgtokdb' language c immutable strict;
+drop type if exists call_qfn_t;
+create type call_qfn_t as (id bigint, val float8, ts timestamp);
+create function call_qfn(varchar, integer) returns setof call_qfn_t as 'pgtokdb','getset' language c immutable strict;
 ```
 One can write this to a text file for execution as follows.
 
@@ -167,10 +166,17 @@ postgres=# copy (select * from genddl(...)) to '/tmp/f.sql';
 * documention
 * build regression suite
 * move de/allocation of dvalues and nulls
+* change entry point name (remove strict and immutable)
+* nmake needs PGROOT passed in
 * lots more
 
 ## Installation and Configuration
-tbd
+TODO:
+* postgres.config
+* c.dll (in Windows)
+* target directories in each OS
+* CREATE EXTENSION
+* Smoke test
 
 ## Sample Usage
 tbd

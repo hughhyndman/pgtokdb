@@ -1,4 +1,4 @@
-\d .pg 
+\d .pgtokdb
 
 //
 // Mapping between kdb+ types and Postgres types
@@ -15,16 +15,17 @@ KPTM:(!/) flip 0N 2#(
 	"g";	"uuid";
 	"X";	"bytea";
 	"d";	"date";
-	"p";	"timestamp"
+	"p";	"timestamp";
+	"s";	"varchar"
 	);
 
 //
 // Some Postgres DDL command templates to manage types and functions
 //
-DTT:"drop type if exists _%f;";
+DTT:"drop type if exists %f_t;";
 DFT:"drop function if exists %f;";
-CTT:"create type _%f as (%c);";
-CFT:"create function %f(%a) returns setof _%f as 'pgtokdb','pgtokdb' language c immutable strict;";
+CTT:"create type %f_t as (%c);";
+CFT:"create function %f(%a) returns setof %f_t as 'pgtokdb','getset' language c;";
 
 //
 // @desc Returns a table with Postgres scripts (DDL) 
@@ -42,9 +43,9 @@ CFT:"create function %f(%a) returns setof _%f as 'pgtokdb','pgtokdb' language c 
 // script
 // -----------------------------------------------------------------------------------------------------------------------
 // "drop function if exists call_qfn;"
-// "drop type if exists _call_qfn;"
-// "create type _call_qfn as (id bigint, val float8, ts timestamp);"
-// "create function call_qfn(varchar, integer) returns setof _call_qfn as 'pgtokdb','pgtokdb' language c immutable strict;""
+// "drop type if exists call_qfn_t;"
+// "create type call_qfn_t as (id bigint, val float8, ts timestamp);"
+// "create function call_qfn(varchar, integer) returns setof call_qfn_t as 'pgtokdb','getset' language c;""
 // 
 // The rows of this script can be written to a text file and be executed by psql
 //
@@ -73,9 +74,9 @@ genddl:{[fnname;argtypes;tblmeta]
 //                                                          script                                                         
 // ------------------------------------------------------------------------------------------------------------------------
 // drop function if exists call_qfn;
-// drop type if exists _call_qfn;
-// create type _call_qfn as (id bigint, val float8, ts timestamp);
-// create function call_qfn(varchar, integer) returns setof _call_qfn as 'pgtokdb','pgtokdb' language c immutable strict;
+// drop type if exists call_qfn_t;
+// create type call_qfn_t as (id bigint, val float8, ts timestamp);
+// create function call_qfn(varchar, integer) returns setof call_qfn_t as 'pgtokdb','getset' language c;
 //
 // or generate a script file that can be execute by psql
 // pg# copy (select * from genddl('.pg.genddle', 'qfn', 'i', 'meta qfn[1]')) to '/tmp/f.sql';
@@ -84,4 +85,4 @@ genddle:{[fnname;argtypes;tblmetaexpr]
 	genddl[fnname;argtypes;value tblmetaexpr]
 	}
 
-\d .
+\d . 

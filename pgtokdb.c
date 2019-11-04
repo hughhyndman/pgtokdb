@@ -21,8 +21,8 @@ int 	findOID(int);
 int 	findName(char *, K);
 void 	safecpy(char *, const char *, size_t);
 K 		kk(I, char *, K);
-void 	pgtokdb_init(FunctionCallInfo);
-K 		getargs(FunctionCallInfo);
+void 	getset_init(FunctionCallInfo);
+K 		getset_args(FunctionCallInfo);
 
 /* Information needed across calls and stored in the function context */
 typedef struct
@@ -111,16 +111,16 @@ void _PG_init(void)
 }
 
 
-PG_FUNCTION_INFO_CUSTOM(pgtokdb); /* A variant of PG_FUNCTION_INFO_V1 */
+PG_FUNCTION_INFO_CUSTOM(getset); /* A variant of PG_FUNCTION_INFO_V1 */
 
 /* 
  * Entry point from Postgres 
  */
-PGDLLEXPORT Datum pgtokdb(PG_FUNCTION_ARGS)
+PGDLLEXPORT Datum getset(PG_FUNCTION_ARGS)
 {
 	/* Initialize on first call */
 	if (SRF_IS_FIRSTCALL())
-		pgtokdb_init(fcinfo);
+		getset_init(fcinfo);
 
 	FuncCallContext *funcctx = SRF_PERCALL_SETUP();
 
@@ -172,7 +172,7 @@ PGDLLEXPORT Datum pgtokdb(PG_FUNCTION_ARGS)
 /* 
  * First call initialization (validation, connection, fetch kdb + table 
  */
-void pgtokdb_init(FunctionCallInfo fcinfo)
+void getset_init(FunctionCallInfo fcinfo)
 {
 	/* Create a function context for cross-call persistence */
 	FuncCallContext *funcctx = SRF_FIRSTCALL_INIT();
@@ -192,7 +192,7 @@ void pgtokdb_init(FunctionCallInfo fcinfo)
 		elog(ERROR, "Socket connection error (%d) attempting to connect to kdb+", handle);
 
 	/* Get Postgres function arguments as a kdb+ array */
-	K args = getargs(fcinfo);
+	K args = getset_args(fcinfo);
 
 	/* Convert first argument (q expression or function) to a cstring */
 	S ef = text_to_cstring(PG_GETARG_VARCHAR_PP(0));
@@ -257,7 +257,7 @@ void pgtokdb_init(FunctionCallInfo fcinfo)
 /* 
  * Get calling Postgres function's arguments 
  */
-K getargs(FunctionCallInfo fcinfo)
+K getset_args(FunctionCallInfo fcinfo)
 {
 	/* Get the OID type list of the arguments for this function. */
 	Oid funcid = fcinfo->flinfo->fn_oid; /* Function's OID */

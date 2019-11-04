@@ -1,173 +1,70 @@
--- 
--- test1: Simple connectivity 
---
-create or replace function run_test1() returns boolean as 
-$$ 
-begin
-	drop function if exists test1;
-	drop type if exists _test1;
-	create type _test1 as (j bigint);
-	create function test1(varchar, int) returns setof _test1 as
-		'pgtokdb', 'pgtokdb' language c immutable strict;
-	perform * from test1('test1', 5);
-	return true;
-end;
-$$ language plpgsql;
+\echo Creating test schema: pgtokdb_test
+SET client_min_messages = 'ERROR';
+
+-- Create all test artifacts inside a temporary schema. It is easy to clean up
+drop schema if exists pgtokdb_test cascade;
+create schema pgtokdb_test;
+set search_path to pgtokdb_test;
+
+\echo Test1: Simple connectivity 
+create type test1_t as (j bigint);
+create function test1(varchar, int) returns setof test1_t as 'pgtokdb', 'getset' language c;
+select * from test1('test1', 5);
+
+\echo Test2: All types returned
+create type test2_t as (b boolean, h smallint, i integer, j bigint, e real, 
+	f double precision, p timestamp, c char, cc varchar);
+create function test2(varchar, int) returns setof test2_t as 'pgtokdb', 'getset' language c;
+select * from test2('test2', 5);
+
+\echo Test3: Casting up kdb+ c, h, i, and j to bigint
+create type test3_t as (j1 bigint, j2 bigint, j3 bigint, j4 bigint);
+create function test3(varchar, int) returns setof test3_t as 'pgtokdb', 'getset' language c;
+select * from test3('test3', 5);
+
+\echo Test4: All supported types passed as arguments
+create type test4_t as (res boolean);
+create function test4(varchar, boolean, smallint, integer, bigint, real, 
+	double precision, timestamp, varchar) returns setof test4_t as 'pgtokdb', 'getset' language c;
+select * from test4('test4', true, cast(1 as smallint), 2, cast(3 as bigint), 
+	cast(4.5 as float4), cast(6.7 as float8), cast(now() as timestamp), 
+	'a varchar string');
+
+\echo Test5: char(1) passed as argument and returned as result
+create type test5_t as (c char);
+create function test5(varchar, char) returns setof test5_t as 'pgtokdb', 'getset' language c;
+select * from test5('test5', 'T');
+
+\echo Test6: timestamp with/without timezone support
+create type test6_t as (p1 timestamp, p2 timestamptz);
+create function test6(varchar, timestamp, timestamptz) returns setof test6_t as 'pgtokdb', 'getset' language c;
+select * from test6('test6', cast(now() as timestamp), now());
+
+\echo Test7: date type support
+create type test7_t as (d date);
+create function test7(varchar, date) returns setof test7_t as 'pgtokdb', 'getset' language c;
+select * from test7('test7', '2019-09-01');
+
+\echo Test8: UUID (g) type support
+create type test8_t as (g UUID); 
+create function test8(varchar, UUID) returns setof test8_t as 'pgtokdb', 'getset' language c;
+select * from test8('test8', 'A0EEBC99-9C0B-4EF8-BB6D-6BB9BD380A11');
+
+\echo Test9: text (C) type support
+create type test9_t as (tt text); 
+create function test9(varchar, text) returns setof test9_t as 'pgtokdb', 'getset' language c;
+select * from test9('test9', 'Here is some text');
+
+\echo Test10: bytea (X) type support
+create type test10_t as (xx bytea); 
+create function test10(varchar, bytea) returns setof test10_t as 'pgtokdb', 'getset' language c;
+select * from test10('test10', '\xBAADF00D');
+
+-- Get rid of all testing artifacts
+\echo Dropping test schema: pgtokdb_test
+drop schema pgtokdb_test cascade;
+set search_path to public;
+set client_min_messages = 'notice';
 
 
---
--- test2: All types returned
---
-create or replace function run_test2() returns boolean as 
-$$ 
-begin
-	drop function if exists test2;
-	drop type if exists _test2;
-	create type _test2 as (b boolean, h smallint, i integer, j bigint, e real, 
-		f double precision, p timestamp, c char, cc varchar);
-	create function test2(varchar, int) returns setof _test2 as
-		'pgtokdb', 'pgtokdb' language c immutable strict;
-	perform * from test2('test2', 5);
-	return true;
-end;
-$$ language plpgsql;
-
-
---
--- test3: Casting up kdb+ c, h, i, and j to bigint
---
-create or replace function run_test3() returns boolean as 
-$$ 
-begin
-	drop function if exists test3;
-	drop type if exists _test3;
-	create type _test3 as (j1 bigint, j2 bigint, j3 bigint, j4 bigint);
-	create function test3(varchar, int) returns setof _test3 as
-		'pgtokdb', 'pgtokdb' language c immutable strict;
-	perform * from test3('test3', 5);
-	return true;
-end;
-$$ language plpgsql;
-
-
---
--- test4: All types passed as arguments
---
-create or replace function run_test4() returns boolean as 
-$$ 
-begin
-	drop function if exists test4;
-	drop type if exists _test4;
-	create type _test4 as (res boolean);
-	create function test4(varchar, boolean, smallint, integer, bigint, real, 
-		double precision, timestamp, varchar) returns setof _test4 as
-		'pgtokdb', 'pgtokdb' language c immutable strict;
-	perform * from test4('test4', true, cast(1 as smallint), 2, cast(3 as bigint), 
-		cast(4.5 as float4), cast(6.7 as float8), cast(now() as timestamp), 
-		'a varchar string');
-	return true;
-end;
-$$ language plpgsql;
-
---
--- test5: char(1) passed as argument and returned as result
---
-create or replace function run_test5() returns boolean as 
-$$ 
-begin
-	drop function if exists test5;
-	drop type if exists _test5;
-	create type _test5 as (c char);
-	create function test5(varchar, char) returns setof _test5 as
-		'pgtokdb', 'pgtokdb' language c immutable strict;
-	perform * from test5('test5', 'T');
-	return true;
-end;
-$$ language plpgsql;
-
---
--- test6: timestamp with/without timezone support
---
-create or replace function run_test6() returns boolean as 
-$$ 
-begin
-	drop function if exists test6;
-	drop type if exists _test6;
-	create type _test6 as (p1 timestamp, p2 timestamptz);
-	create function test6(varchar, timestamp, timestamptz) returns setof _test6 as
-		'pgtokdb', 'pgtokdb' language c immutable strict;
-	perform * from test6('test6', cast(now() as timestamp), now());
-	return true;
-end;
-$$ language plpgsql;
-
---
--- test7: date type support
---
-create or replace function run_test7() returns boolean as 
-$$ 
-begin
-	drop function if exists test7;
-	drop type if exists _test7;
-	create type _test7 as (d date);
-	create function test7(varchar, date) returns setof _test7 as
-		'pgtokdb', 'pgtokdb' language c immutable strict;
-	perform * from test7('test7', '2019-09-01');
-	return true;
-end;
-$$ language plpgsql;
-
-
---
--- test8: UUID (g) type support
---
-create or replace function run_test8() returns boolean as 
-$$ 
-begin
-	drop function if exists test8;
-	drop type if exists _test8;
-	create type _test8 as (g UUID);
-	create function test8(varchar, UUID) returns setof _test8 as 'pgtokdb', 'pgtokdb' language c immutable strict;
-	perform * from test8('test8', 'A0EEBC99-9C0B-4EF8-BB6D-6BB9BD380A11');
-	return true;
-end;
-$$ language plpgsql;
-
---
--- test9: text (C) type support
---
-create or replace function run_test9() returns boolean as 
-$$ 
-begin
-	drop function if exists test9;
-	drop type if exists _test9;
-	create type _test9 as (tt text);
-	create function test9(varchar, text) returns setof _test9 as 'pgtokdb', 'pgtokdb' language c immutable strict;
-	perform * from test9('test9', 'Here is some text');
-	return true;
-end;
-$$ language plpgsql;
-
-
---
--- test10: text (C) type support
---
-create or replace function run_test10() returns boolean as 
-$$ 
-begin
-	drop function if exists test10;
-	drop type if exists _test10;
-	create type _test10 as (xx bytea);
-	create function test10(varchar, bytea) returns setof _test10 as 'pgtokdb', 'pgtokdb' language c immutable strict;
-	perform * from test10('test10', '\xBAADF00D');
-	return true;
-end;
-$$ language plpgsql;
-
-
--- select run_test1();
--- select run_test2();
--- select run_test3();
--- select run_test4();
--- select run_test5();
 
