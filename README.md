@@ -92,7 +92,7 @@ select * from callfun('fun', 10);
  924 | 682.731623685546 | 2019-10-29 14:25:56.51818 | string9
 ```
 
-##Data Types and Conversions
+## Data Types and Conversions
 The table below summarizes the how the data types should be mapped between kdb+ and Postgres. The Code specifies the single character kdb+ datatype codes, which are used in the `genddl` functions in the `pgtokdb` namespace provided in the provided `pgtokdb.q` script file.
 
 kdb+ | Code | Postgres
@@ -113,7 +113,7 @@ symbol | s | varchar
 
 The extension does support up-casting to data types where there won't be any data loss, for example kdb+ short to Postgres bigint. However there could be precision loss when casting integers to floats.
 
-##Utilities
+## Utilities
 Writing wrapper Postgres function and types to specific kdb+ queries is cumbersome, so convenenient utility functions (both kdb+ and Postgres) are provided with the installation.
 
 The kdb+ utilities (`genddl` and `genddle`) are found in the installations `pgtokdb.q` script and are placed in the `.pg` namespace. 
@@ -162,23 +162,23 @@ One can write this to a text file for execution as follows.
 postgres=# copy (select * from genddl(...)) to '/tmp/f.sql';
 ```
 
-##TODO List
+## TODO List
 * flesh out conversion variants
 * documention
 * build regression suite
 * move de/allocation of dvalues and nulls
 * lots more
 
-##Installation and Configuration
+## Installation and Configuration
 tbd
 
-##Sample Usage
+## Sample Usage
 tbd
 
-##Build
+## Build
 tbd (Mac, Linux, and Windows)
 
-##Acknowledgements
+## Acknowledgements
 Aside from the excellent documentation on the Postgres site, there is a lot of good material written by software engineers on various technical aspects of writing Postgres extensions, as follows.
 
 [Writing PostgreSQL Extensions is Fun – C Language](https://www.percona.com/blog/2019/04/05/writing-postgresql-extensions-is-fun-c-language/)
