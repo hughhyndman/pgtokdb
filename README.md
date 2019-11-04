@@ -1,7 +1,7 @@
 # PostgreSQL to kdb+ Extension
-This particular project is intended to integrate data in PostgreSQL with [kdb+](https://en.wikipedia.org/wiki/Kdb%2B) data. While Postgres has excellent transactional support for reference/master data, kdb+ offers a high-performance solution to storing and analyzing large volumes of timeseries data. By allowing a developer to combined the data from both technologies through the standard interfaces that Postgres offers, this extension may be able to expedite the development of new solutions.
+This particular project is intended to integrate data in PostgreSQL with [kdb+](https://en.wikipedia.org/wiki/Kdb%2B) data. While Postgres has excellent transactional support for reference/master data, kdb+ offers a high-performance solution to storing and analyzing extreme volumes of timeseries data. By allowing a developer to combined the data from both technologies through the standard interfaces that Postgres offers, this extension expedites the development of new solutions.
 
-With the pgtokdb extension (SO) installed, the following is a gist of how it works. The extension has an entry point (C function) named `pgtokdb`, that handles communications between SQL and kdb+.
+With the pgtokdb extension (shared library or DLL) installed, the following is a gist of how it works. The extension has an entry point (a C function) named `pgtokdb`, that handles communications between SQL and kdb+.
 
 First, we create a Postgres function that wraps `pgtokdb`. This particular function take a q-language expression that returns a simple table of two columns: i and j, 4-byte and 8-byte integers respectively.
 
@@ -30,7 +30,7 @@ select * from callkdb('qfn[]');
  1 | 100
  2 | 200
  3 | 300
- ```
+```
 
 Below, we have a simple Postgres table that contains some code-description values, where the i column represent the code of, say, some piece of machinery.
 
@@ -41,7 +41,7 @@ select * from code;
  1 | Compressor
  2 | Pump
  3 | Extruder
- ```
+```
 
 Let's join the two table inside of Postgres. 
 
@@ -52,7 +52,7 @@ select B.i, A.c, B.j from code A, callkdb('qfn[]') B where A.i = B.i;
  1 | Compressor | 100
  2 | Pump       | 200
  3 | Extruder   | 300
- ```
+```
  
 Here is a bit more complex example. We want to invoke a kdb+ function that has an integer argument (`numrows`), and returns a table with a different column types. 
 
@@ -92,6 +92,108 @@ select * from callfun('fun', 10);
  924 | 682.731623685546 | 2019-10-29 14:25:56.51818 | string9
 ```
 
-Over the next little while, I'll complete this extension, but provide a more complete description on installation, configuration, and data conversion. This currently only works on my Mac, and I will be testing the build and execution on Windows and Linux platforms.
+##Data Types and Conversions
+The table below summarizes the how the data types should be mapped between kdb+ and Postgres. The Code specifies the single character kdb+ datatype codes, which are used in the `genddl` functions in the `pgtokdb` namespace provided in the provided `pgtokdb.q` script file.
+
+kdb+ | Code | Postgres
+:-- | :-: | :-- 
+boolean | b | boolean 
+short | h | smallint (int2) 
+int | i | int (integer, int4)
+long | j | bigint (int8)
+real | e | real (float4) 
+float | f | double precision (float8)
+GUID | g | UUID
+date | d | date
+timestamp | d | timestamp
+char | c | varchar 
+char[] | C | varchar
+byte[] | X | bytea 
+symbol | s | varchar 
+
+The extension does support up-casting to data types where there won't be any data loss, for example kdb+ short to Postgres bigint. However there could be precision loss when casting integers to floats.
+
+##Utilities
+Writing wrapper Postgres function and types to specific kdb+ queries is cumbersome, so convenenient utility functions (both kdb+ and Postgres) are provided with the installation.
+
+The kdb+ utilities (`genddl` and `genddle`) are found in the installations `pgtokdb.q` script and are placed in the `.pg` namespace. 
+
+The example below uses a function (`qfn`) that takes an integer argument, and returns a kdb+ table with 3 columns: a long (j), float (f), and timestamp (p). We want to build the necessary Postgres function that can call this function.
+
+```
+q) qfn:{[n] ([] id:til n; val:n?9999.99; ts:2019.10.01D0+1D*til n)}
+```
+The `genddl` function (Generate Data Definition Language), takes three arguments: the name of the Postgres function to be created, the kdb+ data type codes of the kdb+ functon arguments, and the meta of the function result.
+
+```
+q) ddl:.pg.genddl["call_qfn";"i";meta qfn[1]]
+q) ddl
+script
+-----------------------------------------------------------------------------------------------------------------------
+"drop function if exists call_qfn;"
+"drop type if exists _call_qfn;"
+"create type _call_qfn as (id bigint, val float8, ts timestamp);"
+"create function call_qfn(varchar, integer) returns setof _call_qfn as 'pgtokdb','pgtokdb' language c immutable strict;"
+```
+The result is a table containing the necessary DDL scripts. The table's contents can be stored in a text file for execution using psql. Note that the first argument to `call_qfn` above is the kdb+ function (or script) to be invoked.
+
+```
+q) `:/tmp/gen.sql 0: ddl[;`script]
+`:/tmp/gen.sql
+```
+
+```
+postgres=# \i /tmp/gen.sql
+```
+
+We can invoke a variant of `genddl` (i.e., `genddle`) from within a psql session by using the `pgtokdb.gendll` Postgres function. The difference is that the (string) expression that generates the meta is provided.
+
+```
+postgres=# select * from pgtokdb.genddl('.pg.genddle', 'call_qfn','i','meta qfn[1]');                                                          script                                                         
+------------------------------------------------------------------------------------------------------------------------
+drop function if exists call_qfn;
+drop type if exists _call_qfn;
+create type _call_qfn as (id bigint, val float8, ts timestamp);
+create function call_qfn(varchar, integer) returns setof _call_qfn as 'pgtokdb','pgtokdb' language c immutable strict;
+```
+One can write this to a text file for execution as follows.
+
+```
+postgres=# copy (select * from genddl(...)) to '/tmp/f.sql';
+```
+
+##TODO List
+* flesh out conversion variants
+* documention
+* build regression suite
+* move de/allocation of dvalues and nulls
+* lots more
+
+##Installation and Configuration
+tbd
+
+##Sample Usage
+tbd
+
+##Build
+tbd (Mac, Linux, and Windows)
+
+##Acknowledgements
+Aside from the excellent documentation on the Postgres site, there is a lot of good material written by software engineers on various technical aspects of writing Postgres extensions, as follows.
+
+[Writing PostgreSQL Extensions is Fun – C Language](https://www.percona.com/blog/2019/04/05/writing-postgresql-extensions-is-fun-c-language/)
+
+[Set Returning Functions and PostgreSQL 10](https://tapoueh.org/blog/2017/10/set-returning-functions-and-postgresql-10/)
+
+[Introduction to MemoryContexts](https://blog.pgaddict.com/posts/introduction-to-memory-contexts)
+
+[Project of UDF and its realization at C for PostgreSQL](https://postgres.cz/wiki/Project_of_UDF_and_its_realization_at_C_for_PostgreSQL)
+
+[Porting a PostgreSQL Extension from Unix to Windows 10](http://www.myrkraverk.com/blog/2019/08/porting-a-postgresql-extension-from-unix-to-windows-10/)
+
+[Writing Postgres Extensions Code Organization and Versioning](http://big-elephants.com/2015-11/writing-postgres-extensions-part-v/)
+
+
+
 
  

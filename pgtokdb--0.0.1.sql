@@ -1,5 +1,4 @@
--- complain if script is sourced in psql, rather than via CREATE EXTENSION
-\echo Use "CREATE EXTENSION pgtokdb" to load this file. \quit
+\echo Use "CREATE EXTENSION pgtokdb;" to load this file. \quit
 
 create schema if not exists pgtokdb;
 

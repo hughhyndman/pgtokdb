@@ -69,7 +69,7 @@ genddl:{[fnname;argtypes;tblmeta]
 //
 // @example
 //
-// pg# select * from pgtokdb.genddl('.pg.genddle', call_qfn','i','meta qfn[1]');
+// pg# select * from pgtokdb.genddl('.pg.genddle', 'qfn','i','meta qfn[1]');
 //                                                          script                                                         
 // ------------------------------------------------------------------------------------------------------------------------
 // drop function if exists call_qfn;
@@ -78,7 +78,7 @@ genddl:{[fnname;argtypes;tblmeta]
 // create function call_qfn(varchar, integer) returns setof _call_qfn as 'pgtokdb','pgtokdb' language c immutable strict;
 //
 // or generate a script file that can be execute by psql
-// pg# copy (select * from genddl('.pg.genddle', 'call_qfn', 'i', 'meta qfn[1]')) to '/tmp/f.sql';
+// pg# copy (select * from genddl('.pg.genddle', 'qfn', 'i', 'meta qfn[1]')) to '/tmp/f.sql';
 //
 genddle:{[fnname;argtypes;tblmetaexpr]
 	genddl[fnname;argtypes;value tblmetaexpr]

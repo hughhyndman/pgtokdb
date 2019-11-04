@@ -1,15 +1,5 @@
 /* Copyright: Hugh Hyndman 2019 */
 
-/*
- * TODO List:
- *	- flesh out conversion variants
- *	- document (in MD format)
- *	- test builds on WindowFs and Linux
- *	- debug vs release builds
- *	- build regression suite
- *	- move de/allocation of dvalues and nulls UIFC (performance)
- */
-
 #include "pgtokdb.h"
 #include <fmgr.h>
 #include <funcapi.h>
@@ -332,7 +322,7 @@ K kk(I h, char *f, K lo)
 		case 7: return k(h, f, p[0], p[1], p[2], p[3], p[4], p[5], p[6], (K) 0);
 		case 8: return k(h, f, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], (K) 0);
 		default: 
-			elog(ERROR, "Maximum number of kdb+ function parameters is 8");
+			elog(ERROR, "The number of kdb+ function parameters exceeds 8");
 			return 0;
 	}
 }
