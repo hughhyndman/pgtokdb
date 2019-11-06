@@ -205,7 +205,7 @@ Then start psql and invoke its test script.
 $ psql --quiet --file pgtokdb/test/pgtokdb_test.sql
 Creating test schema: pgtokdb_test
 ************** Happy Path Testing **************
-**Test01: Simple connectivity**
+** Test01: Simple connectivity
  j 
 ---
  0
@@ -216,10 +216,10 @@ Creating test schema: pgtokdb_test
 (5 rows)
 ...
 ************** Exception Path Testing **************
-**Testxx: Error on kdb+ not returning unkeyed table**
+** Testxx: Error on kdb+ not returning unkeyed table
 psql:dev/pgtokdb/test/pgtokdb_test.sql:xx: ERROR:  Result from kdb+ must be unkeyed table
 psql:dev/pgtokdb/test/pgtokdb_test.sql:xx: ERROR:  Result from kdb+ must be unkeyed table
-**Testxx: Unsupported argument types**
+** Testxx: Unsupported argument types
 psql:dev/pgtokdb/test/pgtokdb_test.sql:xx: ERROR:  Argument 1 uses an unsupport type
 ```
 
