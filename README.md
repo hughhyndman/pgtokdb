@@ -194,8 +194,7 @@ tbd (Mac, Linux, and Windows)
 The project has a test folder that contains a lengthy PGSQL script (and matching kdb+ script) that runs through both happy and exception paths of the extension. To run these tests, first start a local instance of kdb+ that loads its script file and listens on port 5000.
 
 ```
-$ cd pgtokdb/test
-$ q pgtokdb_test.q -p 5000
+$ q pgtokdb/test/pgtokdb_test.q -p 5000
 "Ready to run tests."
 q) 
 ```
@@ -206,7 +205,7 @@ Then start psql and invoke its test script.
 $ psql --quiet --file pgtokdb/test/pgtokdb_test.sql
 Creating test schema: pgtokdb_test
 ************** Happy Path Testing **************
-Testxx: Simple connectivity
+**Test01: Simple connectivity**
  j 
 ---
  0
@@ -217,14 +216,14 @@ Testxx: Simple connectivity
 (5 rows)
 ...
 ************** Exception Path Testing **************
-Testxx: Error on kdb+ not returning unkeyed table
+**Testxx: Error on kdb+ not returning unkeyed table**
 psql:dev/pgtokdb/test/pgtokdb_test.sql:xx: ERROR:  Result from kdb+ must be unkeyed table
 psql:dev/pgtokdb/test/pgtokdb_test.sql:xx: ERROR:  Result from kdb+ must be unkeyed table
-Testxx: Unsupported argument types
+**Testxx: Unsupported argument types**
 psql:dev/pgtokdb/test/pgtokdb_test.sql:xx: ERROR:  Argument 1 uses an unsupport type
 ```
 
-The Happy Path Testing should not produce any errors, while the Exception Path Testing should produce only errors, displaying error messages emited from the extension.
+The Happy Path Testing should not produce any errors, while the Exception Path Testing should only produce errors that are emited from the extension.
 
 ## Acknowledgements
 Aside from the excellent documentation on the Postgres site, there is a lot of good material written by software engineers on various technical aspects of writing Postgres extensions, as follows.
