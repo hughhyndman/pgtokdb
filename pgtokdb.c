@@ -233,7 +233,7 @@ void getset_init(FunctionCallInfo fcinfo)
 		char *attname = attinmeta->tupdesc->attrs[i].attname.data;
 		int pos = findName(attname, colnames);
 		if (pos == -1)
-			elog(ERROR, "Unable to match column \"%s\" in kdb+ table", attname);
+			elog(ERROR, "Unable to match column name \"%s\" in kdb+ table", attname);
 		perm[i] = pos;
 
 		/* Find matching data type conversion */
@@ -275,7 +275,7 @@ K getset_args(FunctionCallInfo fcinfo)
 		elog(ERROR, "Function must have at least one argument");
 
 	if (pargoids[0] != VARCHAROID)
-		elog(ERROR, "Function first argument must be a varchar (kdb+ expression or function");
+		elog(ERROR, "Function first argument must be a varchar (kdb+ expression or function)");
 
 	/* Initialize mixed K array (to be populated below) */
 	K lo = knk(nargs - 1, 0); 
@@ -286,7 +286,7 @@ K getset_args(FunctionCallInfo fcinfo)
 
 		int ind = findOID(oid); /* Get data conversion */
 		if (ind < 0)
-			elog(ERROR, "Argument %d uses an unsupport type", i);
+			elog(ERROR, "Argument %d uses an unsupported type", i + 1);
 
 		/* Call conversion routine via dispatch table */
 		kK(lo)[i - 1] = (todt[ind].p2k)(PG_GETARG_DATUM(i));

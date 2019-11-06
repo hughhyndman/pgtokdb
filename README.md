@@ -178,7 +178,7 @@ TODO:
 * Smoke test
 
 ```q
-q) select * from pgtokdb.getstatus('status[]');
+q) select * from pgtokdb.getstatus('.pgtokdb.status[]');
  os  | version |  release   |          timenow           
 -----+---------+------------+----------------------------
  m64 |     3.6 | 2018-11-09 | 2019-11-05 00:05:30.281957
@@ -209,11 +209,7 @@ Creating test schema: pgtokdb_test
  j 
 ---
  0
- 1
- 2
- 3
- 4
-(5 rows)
+(1 row)
 ...
 ************** Exception Path Testing **************
 ** Testxx: Error on kdb+ not returning unkeyed table
@@ -223,7 +219,7 @@ psql:dev/pgtokdb/test/pgtokdb_test.sql:xx: ERROR:  Result from kdb+ must be unke
 psql:dev/pgtokdb/test/pgtokdb_test.sql:xx: ERROR:  Argument 1 uses an unsupport type
 ```
 
-The Happy Path Testing should not produce any errors, while the Exception Path Testing should only produce errors that are emited from the extension.
+The Happy Path Testing should not produce any errors, while the Exception Path Testing should only produce those errors that are emited from the extension.
 
 ## Acknowledgements
 Aside from the excellent documentation on the Postgres site, there is a lot of good material written by software engineers on various technical aspects of writing Postgres extensions, as follows.
