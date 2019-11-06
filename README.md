@@ -6,8 +6,7 @@ With the pgtokdb extension (shared library or DLL) installed, the following is a
 First, we create a Postgres function that wraps `getset`. This particular function takes a q-language expression that returns a simple table of two columns: i and j, 4-byte and 8-byte integers respectively.
 
 ```sql
-create or replace function callkdb(varchar) returns table(i integer, j bigint) 
-    as 'pgtokdb', 'getset' language c;
+create or replace function callkdb(varchar) returns table(i integer, j bigint) as 'pgtokdb', 'getset' language c;
 ```
 
 We have a tiny q function defined that returns a simple table. A kdb+ session is running listening on a configured port waiting for work.
@@ -63,7 +62,7 @@ fun:{[numrows]
         id:numrows?1000; / Random bigints (j)
         vals:numrows?999.9; / Random floats (f)
         ts:.z.p+1000000000*til numrows; / Array of timestamps (p), starting at now 
-        str:"string",/: string til numrows / Just some strings (C)
+        str:"string" ,/: string til numrows / Just some strings (C)
         )
    }
 ```
@@ -125,7 +124,7 @@ q) qfn:{[n] ([] id:til n; val:n?9999.99; ts:2019.10.01D0+1D*til n)}
 The `genddl` function (Generate Data Definition Language), takes three arguments: the name of the Postgres function to be created, the kdb+ data type codes of the kdb+ functon arguments, and the meta of the function result.
 
 ```
-q) ddl:.pgtokdb.genddl["call_qfn";"i";meta qfn[1]]
+q) ddl:.pgtokdb.genddl["call_qfn"; "i"; meta qfn[1]]
 q) ddl
 script
 -----------------------------------------------------------------------------------------------------------------------
@@ -148,23 +147,23 @@ postgres=# \i /tmp/gen.sql
 We can invoke a variant of `genddl` (i.e., `genddle`) from within a psql session by using the `pgtokdb.gendll` Postgres function. The difference is that the (string) expression that generates the meta is provided.
 
 ```
-postgres=# select * from pgtokdb.genddl('.pgtokdb.genddle', 'call_qfn','i','meta qfn[1]');                                                          script                                                         
-------------------------------------------------------------------------------------------------------------------------
+postgres=# select * from pgtokdb.genddl('.pgtokdb.genddle', 'call_qfn','i','metaqfn[1]');
+script                                                         
+-----------------------------------------------------------------------------------------------------
 drop function if exists call_qfn;
 drop type if exists call_qfn_t;
 create type call_qfn_t as (id bigint, val float8, ts timestamp);
-create function call_qfn(varchar, integer) returns setof call_qfn_t as 'pgtokdb','getset' language c immutable strict;
+create function call_qfn(varchar, integer) returns setof call_qfn_t as 'pgtokdb','getset' language c;
 ```
 One can write this to a text file for execution as follows.
 
 ```
-postgres=# copy (select * from genddl(...)) to '/tmp/f.sql';
+postgres=# copy (select * from pgtokdb.genddl(...)) to '/tmp/f.sql';
 ```
 
 ## TODO List
 * flesh out conversion variants
 * documention
-* build regression suite
 * move de/allocation of dvalues and nulls
 * change entry point name (remove strict and immutable)
 * nmake needs PGROOT passed in
@@ -178,11 +177,54 @@ TODO:
 * CREATE EXTENSION
 * Smoke test
 
+```q
+q) select * from pgtokdb.getstatus('status[]');
+ os  | version |  release   |          timenow           
+-----+---------+------------+----------------------------
+ m64 |     3.6 | 2018-11-09 | 2019-11-05 00:05:30.281957
+```
+
 ## Sample Usage
 tbd
 
 ## Build
 tbd (Mac, Linux, and Windows)
+
+### Regression Tests
+The project has a test folder that contains a lengthy PGSQL script (and matching kdb+ script) that runs through both happy and exception paths of the extension. To run these tests, first start a local instance of kdb+ that loads its script file and listens on port 5000.
+
+```
+$ cd pgtokdb/test
+$ q pgtokdb_test.q -p 5000
+"Ready to run tests."
+q) 
+```
+
+Then start psql and invoke its test script.
+
+```
+$ psql --quiet --file pgtokdb/test/pgtokdb_test.sql
+Creating test schema: pgtokdb_test
+************** Happy Path Testing **************
+Testxx: Simple connectivity
+ j 
+---
+ 0
+ 1
+ 2
+ 3
+ 4
+(5 rows)
+...
+************** Exception Path Testing **************
+Testxx: Error on kdb+ not returning unkeyed table
+psql:dev/pgtokdb/test/pgtokdb_test.sql:xx: ERROR:  Result from kdb+ must be unkeyed table
+psql:dev/pgtokdb/test/pgtokdb_test.sql:xx: ERROR:  Result from kdb+ must be unkeyed table
+Testxx: Unsupported argument types
+psql:dev/pgtokdb/test/pgtokdb_test.sql:xx: ERROR:  Argument 1 uses an unsupport type
+```
+
+The Happy Path Testing should not produce any errors, while the Exception Path Testing should produce only errors, displaying error messages emited from the extension.
 
 ## Acknowledgements
 Aside from the excellent documentation on the Postgres site, there is a lot of good material written by software engineers on various technical aspects of writing Postgres extensions, as follows.

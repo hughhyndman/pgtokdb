@@ -211,7 +211,7 @@ Datum k2p_varchar(K c, int i)
 		} 
 		/* Falling through to error at end */
 	} 
-	else if (c->t == KC)
+	else if (c->t == KC) 
 	{
 		char x = kC(c)[i];
 		return (Datum) cstring_to_text_with_len(&x, 1);

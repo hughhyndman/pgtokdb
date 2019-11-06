@@ -85,4 +85,10 @@ genddle:{[fnname;argtypes;tblmetaexpr]
 	genddl[fnname;argtypes;value tblmetaexpr]
 	}
 
+//
+// @desc Return single row table returning system information
+//
+getstatus:{flip `os`version`release`timenow!1#'(.z.o;.z.K;.z.k;.z.p)}
+
+
 \d . 
