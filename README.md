@@ -1,7 +1,7 @@
 # PostgreSQL to kdb+ Extension
-This particular project is intended to integrate data in PostgreSQL with [kdb+](https://en.wikipedia.org/wiki/Kdb%2B) data. While Postgres has excellent transactional support for reference/master data, kdb+ offers a high-performance solution to storing and analyzing extreme volumes of timeseries data. By allowing a developer to combined the data from both technologies through the standard interfaces that Postgres offers, this extension expedites the development of new solutions.
+This  project is intended to allow Postgres command to access [kdb+](https://en.wikipedia.org/wiki/Kdb%2B) data. While Postgres has excellent transactional support for reference/master data, kdb+ offers a high-performance solution to storing and analyzing extreme volumes of timeseries data. By allowing developers to combine the data from both technologies through the standard interfaces that Postgres provides, this extension may expedite the development of new solutions.
 
-With the pgtokdb extension (shared library or DLL) installed, the following is a gist of how it works. The extension has an entry point (a C function) named `getset` (a SRF: Set Returning Function), that handles communications between SQL and kdb+.
+The following is a gist of how the `pgtokdb` works. The extension has an entry point (a C function) named `getset` (a SRF: Set Returning Function), that handles communications between SQL and kdb+.
 
 First, we create a Postgres function that wraps `getset`. This particular function takes a q-language expression that returns a simple table of two columns: i and j, 4-byte and 8-byte integers respectively.
 
@@ -54,7 +54,7 @@ select B.i, A.c, B.j from code A, callkdb('qfn[]') B where A.i = B.i;
  3 | Extruder   | 300
 ```
  
-Here is a bit more complex example. We want to invoke a kdb+ function that has an integer argument (`numrows`), and returns a table with a different column types. 
+Below is a bit more complex example. We want to invoke a kdb+ function that has an integer argument (`numrows`), and returns a table with different column types. 
 
 ```q
 fun:{[numrows]
@@ -68,7 +68,7 @@ fun:{[numrows]
    }
 ```
 
-In Postgres, we create a type that maps to the names and data types of the kdb+ function result. Also, we create a function that connects everything. Finally, we make the call from within psql.
+In Postgres, we create a type that maps to the names and data types of the kdb+ function result. Also, we create a function that glues it all together.
 
 ```sql
 create type callfun_t as (id bigint, vals float8, ts timestamp, str varchar);
@@ -90,6 +90,7 @@ select * from callfun('fun', 10);
  461 | 484.424253823073 | 2019-10-29 14:25:55.51818 | string8
  924 | 682.731623685546 | 2019-10-29 14:25:56.51818 | string9
 ```
+Finally, there are many regression tests in the project [test directory](https://github.com/hughhyndman/pgtokdb/tree/master/test) that are great examples of show varying data types, arguments, results, and capabilities.  
 
 ## Data Types and Conversions
 The table below summarizes the how the data types should be mapped between kdb+ and Postgres. The Code specifies the single character kdb+ datatype codes, which are used in the `genddl` functions in the `pgtokdb` namespace provided in the provided `pgtokdb.q` script file.
@@ -108,10 +109,70 @@ timestamp | d | timestamp
 char | c | varchar 
 char[] | C | varchar
 byte[] | X | bytea
-long[] | J | bigint[] 
+long[] | J | bigint[]
+int[] | I | integer[] 
 symbol | s | varchar 
 
 The extension does support up-casting to data types where there won't be any data loss, for example kdb+ short to Postgres bigint. However there could be precision loss when casting integers to floats.
+
+## Installation
+
+The distribution files have to be placed into a directories that comprise the deployed Postgres installation. In order to determine which directories to use, Postgres provides a utility in its bin directory called `pg_config`. This utility prints configuration parameters of the currently installed version of PostgreSQL. There are a number of options available to `pgconfig` which return names of directories for distribution files. The table below summarizes each file in the pgtokdb distribution and the pg_config option to be used to identify their destination.
+
+ File | pg_config option | Notes
+ :--- | :--- | :---
+ pgtokdb.so | --pkglibdir | Shared library to be used for Mac and Linux deployments
+ pgtokdb.dll | --pkglibdir | DLL to be used for Windows deployments
+ pgtokdb.control | --sharedir | Descriptive information for the extension
+ pgtokdb.sql | --sharedir | SQL script that is run when extension is CREATED
+ c.dll | | Kx Systems C-language DLL to be placed in PATH
+ pgtokdb.q | | Kdb+ script placed somewhere convenient to the Q directories
+
+As an example, on my Mac, here are the names of the target directories.
+
+```bash
+$ pg_config --pkglibdir
+/usr/local/pgsql/lib
+$ pg_config --sharedir
+/usr/local/pgsql/share
+```
+
+Once the files are copied, start `psql` and make the extension known to Postgres via the CREATE EXTENSION command.
+
+```sql
+$ psql
+postgres=# create extension pgtokdb;
+CREATE EXTENSION
+```
+This command will fail if the files have not be placed in the correct directories. Also, in the case of Windows, if `c.dll` wasn't placed in the PATH.
+
+A smoke test is provided as part of the installation, which includes a few functions in the Postgres PGTOKDB schema. You will need to start q on the same host as Postgres listening on Port 5000 (this can be changed in postgres.config -- see configuration below).
+
+```q
+q pgtokdb.q -P 5000
+q) 
+```
+
+In another session, start psql and run the following select statement. If you get information similar to below, the extension is installed correctly.
+
+```sql
+$ psql
+postgres=# select * from pgtokdb.getstatus('.pgtokdb.status[]');
+ os  | version |  release   |          timenow           
+-----+---------+------------+----------------------------
+ m64 |     3.6 | 2018-11-09 | 2019-11-05 00:05:30.281957
+```
+## Configuration
+
+The postgres.config file can be modified to add the following configuration settings.
+
+Setting | Description | Default
+:-- | :-- | :-- 
+pgtokdb.host | host name or IP address | localhost
+pgtokdb.port | TCP/IP port | 5000
+pgtokdb.userpass | user:pass | None provided
+
+Note that configuration settings are read initially when a Postgres process loads the extension. To reread the settings, the process will need to restart.
 
 ## Utilities
 Writing wrapper Postgres function and types to specific kdb+ queries is cumbersome, so convenenient utility functions (both kdb+ and Postgres) are provided with the installation.
@@ -143,6 +204,7 @@ q) `:/tmp/gen.sql 0: ddl[;`script]
 ```
 
 ```
+$ psql
 postgres=# \i /tmp/gen.sql
 ```
 
@@ -163,39 +225,9 @@ One can write this to a text file for execution as follows.
 postgres=# copy (select * from pgtokdb.genddl(...)) to '/tmp/f.sql';
 ```
 
-## TODO List
-* documentation
-* signing of distributions
-
-## Installation and Configuration
-TODO:
-* c.dll (in Windows)
-* target directories in each OS
-* CREATE EXTENSION
-
-
-```q
-q) select * from pgtokdb.getstatus('.pgtokdb.status[]');
- os  | version |  release   |          timenow           
------+---------+------------+----------------------------
- m64 |     3.6 | 2018-11-09 | 2019-11-05 00:05:30.281957
-```
-### Configuration
-
-The postgres.config file can be modified to add the following configuration settings.
-
-Setting | Description | Default
-:-- | :-- | :-- 
-pgtokdb.host | host name or IP address | localhost
-pgtokdb.port | TCP/IP port | 5000
-pgtokdb.userpass | user:pass | None provided
-
-Note that configuration settings are read initially when a Postgres process loads the extension. To reread the settings, the process will need to restart.
-
-## Sample Usage
-tbd
-
 ## Building the Extension
+
+TBD
 ### Mac and Linux
 tbd
 
@@ -207,7 +239,7 @@ Install clang
 Open a shell with x64 Native Tools Command Prompt for VS2019
 
 ### Regression Tests
-The project has a test folder that contains a lengthy PGSQL script (and matching kdb+ script) that runs through both happy and exception paths of the extension. To run these tests, first start a local instance of kdb+ that loads its script file and listens on port 5000.
+The project has a test directory that contains a lengthy PGSQL script (and matching kdb+ script) that runs through both happy and exception paths of the extension. To run these tests, first start a local instance of kdb+ that loads its script file and listens on port 5000.
 
 ```
 $ q pgtokdb/test/pgtokdb_test.q -p 5000

@@ -41,7 +41,7 @@ struct
 	Datum   (*k2p)(K, int);	/* Function to convert kdb+ to Postgres */
 	K		(*p2k)(Datum); 	/* Function to convert Postgres to kdb+ */
 	bool    isref;			/* Indicates whether Postgres Datum is a reference */
-} todt[15] =
+} todt[16] =
 {
 	{ BOOLOID,			k2p_bool,     	p2k_bool,		false },
 	{ INT2OID,			k2p_int2,     	p2k_int2,		false },
@@ -57,7 +57,8 @@ struct
 	{ UUIDOID,			k2p_uuid,		p2k_uuid,		true  },
 	{ TEXTOID,			k2p_varchar,	p2k_varchar,	true  },
 	{ BYTEAOID,			k2p_bytea,		p2k_bytea,		true  },
-	{ INT8ARRAYOID,		k2p_int8array,	NULL,			true  }
+	{ INT8ARRAYOID,		k2p_int8array,	NULL,			true  },
+	{ INT4ARRAYOID,		k2p_int4array,	NULL,			true  }
 	/* ... add support for additional data types here ... */
 };
 

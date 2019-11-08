@@ -40,6 +40,7 @@ Datum k2p_char(K, int);
 Datum k2p_date(K, int);
 Datum k2p_bytea(K, int);
 Datum k2p_int8array(K, int);
+Datum k2p_int4array(K, int);
 
 K p2k_uuid(Datum);
 K p2k_bool(Datum);
@@ -54,5 +55,6 @@ K p2k_char(Datum);
 K p2k_date(Datum);
 K p2k_bytea(Datum);
 K p2k_int8array(Datum);
+
 
 #endif /* PKGTOKDB_H */

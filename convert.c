@@ -278,7 +278,7 @@ Datum k2p_char(K c, int i)
 	return k2p_varchar(c, i);
 }
 
-/* Convert a kdb+ long (J) list, to an int8[] array in Postgres */
+/* Convert a kdb+ long list (J), to an int8[] array in Postgres */
 Datum k2p_int8array(K c, int i)
 {
 	if (c->t == 0) /* If a list... */
@@ -308,6 +308,38 @@ Datum k2p_int8array(K c, int i)
 		}
 	}
 	elog(ERROR, k2p_error, i, "bigint[]");
+}
+
+/* Convert a kdb+ int list (I), to an integer[] array in Postgres */
+Datum k2p_int4array(K c, int i)
+{
+	if (c->t == 0) /* If a list... */
+	{
+		K p = kK(c)[i];
+		if (p->t == KI) /* ...of ints (I) */
+		{
+			int32 *list = (int32 *) kI(p); /* Pointers to values */
+			int n = p->n;  /* Number of elements */
+
+			/* Copy data from K structure to Datum list */
+			Datum *data = (Datum *) palloc(p->n * sizeof(Datum));
+			for (int i = 0; i < n; i++)
+				data[i] = Int32GetDatum(list[i]);
+
+			/*
+			 * Use PG routine to construct the array. The magic 'i' comes from
+			 * inspecting the typalign column of table pg_type, as follows:
+			 * 
+			 * select typalign, typlen from pg_type where typname like 'int4';
+			 */
+			ArrayType *array = construct_array(data, n, INT4OID, 4, true, 'i');
+
+			pfree(data);
+
+			return PointerGetDatum(array);
+		}
+	}
+	elog(ERROR, k2p_error, i, "integer[]");
 }
 
 

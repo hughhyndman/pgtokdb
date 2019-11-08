@@ -70,6 +70,11 @@ create type test11_t as (jj bigint[]);
 create function test11(varchar, integer) returns setof test11_t as 'pgtokdb', 'getset' language c;
 select * from test11('test11', 3);
 
+\echo ** Test50: int[] (I) type support
+create type test50_t as (ii integer[]);
+create function test50(varchar, integer) returns setof test50_t as 'pgtokdb', 'getset' language c;
+select * from test50('test50', 3);
+
 \echo ** Test12: Casting up kdb+ type h (short) to Postgres integer, bigint, real, and double precision
 create type test12_t as (i integer, j bigint, e real, f double precision);
 create function test12(varchar, smallint) returns setof test12_t as 'pgtokdb', 'getset' language c;

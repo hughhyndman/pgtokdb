@@ -36,6 +36,8 @@ test10:{[x] ([] xx:1#enlist x)}
 
 test11:{[n] ([] jj:til each n?20)}
 
+test50:{[n] ([] ii:{"i"$til x} each n?20)}
+
 test12:{[h] ([] i:1#h; j:1#h; e:1#h; f:1#h)}
 
 test13:{[i] ([] j:1#i; e:1#i; f:1#i)}
