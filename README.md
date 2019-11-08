@@ -1,5 +1,5 @@
 # PostgreSQL to kdb+ Extension
-This project is the implementation of an extention that allows Postgres processes to access [kdb+](https://en.wikipedia.org/wiki/Kdb%2B) data. While Postgres has excellent transactional support for reference/master data, kdb+ offers a high-performance solution to storing and analyzing extreme volumes of timeseries data. By allowing developers to combine the data from both technologies through the standard interfaces that Postgres provides, this extension may expedite the development of new solutions.
+This project is the implementation of an Postgres Extension that allows Postgres processes to access [kdb+](https://en.wikipedia.org/wiki/Kdb%2B) data through its SQL interface. While Postgres has excellent transactional support for reference/master data, kdb+ offers a high-performance solution to storing and analyzing extreme volumes of timeseries data. By allowing developers to combine the data from both technologies through the standard interfaces that Postgres provides, this extension may expedite the development of new solutions.
 
 The following is a gist of how the `pgtokdb` works. The extension has an entry point (a C function) named `getset` (a SRF: Set Returning Function), that handles communications between SQL and kdb+.
 
