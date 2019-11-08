@@ -1,4 +1,6 @@
+!ifndef PGROOT
 PGROOT = c:\pgsql-12
+!endif
 
 PKGLIBDIR = $(PGROOT)\lib
 INCLUDEDIR = $(PGROOT)\include
@@ -18,12 +20,12 @@ DFLAGS = -O3
 !endif
 
 #
-# Turn off some warnings that arise out of Microsoft header files
+# Turn off some warnings that arise out of Microsoft's header files
 #
 WARNINGS = -Wall -Wno-unused-parameter -Wno-incompatible-pointer-types \
 	-Wno-pointer-sign -Wno-deprecated-declarations
 
-CFLAGS = -c -m64 $(WARNINGS) \
+CFLAGS = -c -m64 $(DFLAGS) $(WARNINGS) \
 	-I$(INCLUDEDIR)\server\port\win32_msvc \
 	-I$(INCLUDEDIR)\server\port\win32 \
 	-I$(INCLUDEDIR)\server \

@@ -6,7 +6,8 @@ With the pgtokdb extension (shared library or DLL) installed, the following is a
 First, we create a Postgres function that wraps `getset`. This particular function takes a q-language expression that returns a simple table of two columns: i and j, 4-byte and 8-byte integers respectively.
 
 ```sql
-create or replace function callkdb(varchar) returns table(i integer, j bigint) as 'pgtokdb', 'getset' language c;
+create type callkdb_t as (i integer, j bigint);
+create callkdb(varchar) returns setof callkdb_t as 'pgtokdb', 'getset' language c;
 ```
 
 We have a tiny q function defined that returns a simple table. A kdb+ session is running listening on a configured port waiting for work.
@@ -162,20 +163,15 @@ postgres=# copy (select * from pgtokdb.genddl(...)) to '/tmp/f.sql';
 ```
 
 ## TODO List
-* flesh out conversion variants
-* documention
-* move de/allocation of dvalues and nulls
-* change entry point name (remove strict and immutable)
-* nmake needs PGROOT passed in
-* lots more
+* documentation
+* signing of distributions
 
 ## Installation and Configuration
 TODO:
-* postgres.config
 * c.dll (in Windows)
 * target directories in each OS
 * CREATE EXTENSION
-* Smoke test
+
 
 ```q
 q) select * from pgtokdb.getstatus('.pgtokdb.status[]');
@@ -183,12 +179,31 @@ q) select * from pgtokdb.getstatus('.pgtokdb.status[]');
 -----+---------+------------+----------------------------
  m64 |     3.6 | 2018-11-09 | 2019-11-05 00:05:30.281957
 ```
+### Configuration
+
+The postgres.config file can be modified to add the following configuration settings.
+
+Setting | Description | Default
+:-- | :-- | :-- 
+pgtokdb.host | host name or IP address | localhost
+pgtokdb.port | TCP/IP port | 5000
+pgtokdb.userpass | user:pass | None provided
+
+Note that configuration settings are read initially when a Postgres process loads the extension. To reread the settings, the process will need to restart.
 
 ## Sample Usage
 tbd
 
-## Build
-tbd (Mac, Linux, and Windows)
+## Building the Extension
+### Mac and Linux
+tbd
+
+### Windows
+
+URL to Postgres page that describes the build process
+Install Perl
+Install clang
+Open a shell with x64 Native Tools Command Prompt for VS2019
 
 ### Regression Tests
 The project has a test folder that contains a lengthy PGSQL script (and matching kdb+ script) that runs through both happy and exception paths of the extension. To run these tests, first start a local instance of kdb+ that loads its script file and listens on port 5000.
@@ -216,7 +231,8 @@ Creating test schema: pgtokdb_test
 psql:dev/pgtokdb/test/pgtokdb_test.sql:xx: ERROR:  Result from kdb+ must be unkeyed table
 psql:dev/pgtokdb/test/pgtokdb_test.sql:xx: ERROR:  Result from kdb+ must be unkeyed table
 ** Testxx: Unsupported argument types
-psql:dev/pgtokdb/test/pgtokdb_test.sql:xx: ERROR:  Argument 1 uses an unsupport type
+psql:dev/pgtokdb/test/pgtokdb_test.sql:xx: ERROR:  Argument 1 uses an unsupported type
+...
 ```
 
 The Happy Path Testing should not produce any errors, while the Exception Path Testing should only produce those errors that are emited from the extension.
@@ -235,8 +251,3 @@ Aside from the excellent documentation on the Postgres site, there is a lot of g
 [Porting a PostgreSQL Extension from Unix to Windows 10](http://www.myrkraverk.com/blog/2019/08/porting-a-postgresql-extension-from-unix-to-windows-10/)
 
 [Writing Postgres Extensions Code Organization and Versioning](http://big-elephants.com/2015-11/writing-postgres-extensions-part-v/)
-
-
-
-
- 

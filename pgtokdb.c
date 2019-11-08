@@ -27,9 +27,11 @@ K 		getset_args(FunctionCallInfo);
 /* Information needed across calls and stored in the function context */
 typedef struct
 {
-	K   table;
-	int *perm;
-	int *todtind;
+	K   	table;
+	int 	*perm;
+	int 	*todtind;
+	Datum 	*dvalues;
+	bool 	*nulls;
 } UIFC; /* User Information Function Context */
 
 /* Type OID dispatch table used to determine conversion functions */
@@ -137,8 +139,8 @@ PGDLLEXPORT Datum getset(PG_FUNCTION_ARGS)
 	if (funcctx->call_cntr < kK(values)[0]->n)
 	{
 		/* Initialize components that make up the tuple (data and null indicators) */
-		Datum *dvalues = (Datum *) palloc(natts * sizeof(Datum));
-		bool *nulls = (bool *) palloc0(natts * sizeof(bool)); 
+		Datum *dvalues = puifc->dvalues; //! (Datum *) palloc(natts * sizeof(Datum));
+		bool *nulls = puifc->nulls; //! (bool *) palloc0(natts * sizeof(bool)); 
 
 		/* Convert columns from kdb+ format to Postgres format */
 		for (int i = 0; i < natts; i++)
@@ -155,7 +157,7 @@ PGDLLEXPORT Datum getset(PG_FUNCTION_ARGS)
 			if (todt[todtind[i]].isref)
 				pfree((void *) dvalues[i]);
 
-		pfree(dvalues); pfree(nulls); /* Free memory between calls */
+		//! pfree(dvalues); pfree(nulls); /* Free memory between calls */
 
 		Datum result = HeapTupleGetDatum(tuple); /* Convert tuple to Datum */
 
@@ -203,7 +205,7 @@ void getset_init(FunctionCallInfo fcinfo)
 
 	/* Ensure result is a simple (unkeyed) table */
 	if (!table)
-		elog(ERROR, "Network error communicating with kdb+: %s", strerror(errno));
+		elog(ERROR, "Network error communicating with kdb+");
 	else if (-128 == table->t)
 	{
 		char *p = pstrdup(TX(S, table)); /* need to duplicate error string */
@@ -248,6 +250,9 @@ void getset_init(FunctionCallInfo fcinfo)
 	puifc->table = table;
 	puifc->perm = perm;
 	puifc->todtind = todtind;
+	puifc->dvalues = (Datum *) palloc(natts * sizeof(Datum));
+	puifc->nulls = (bool *) palloc0(natts * sizeof(bool));
+
 	funcctx->user_fctx = puifc;
 
 	MemoryContextSwitchTo(oldcontext);

@@ -79,6 +79,10 @@ test32:{([] j:1#1)}
 
 test33:{([] j:1#1)}
 
+test34:{[n] ([] cc:n#enlist 1000#"x" ; xx:n#enlist "x"$til 256 ; g:n?0Ng)}
+
+test35:{[n] ([] i:"i"$til n)}
+
 show "Ready to run tests."
 
 // Handy utility to renumber tests in the .SQL and .Q files. It used after additional

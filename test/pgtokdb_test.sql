@@ -188,6 +188,21 @@ create function test33(
 	integer, integer) returns setof test33_t as 'pgtokdb', 'getset' language c;
 select * from test33('test33[]', 1, 2, 3, 4, 5, 6, 7, 8, 9);
 
+\echo '************** Performance Testing **************'
+\timing on
+
+\echo ** Test34: Retrieving 100,000 wide rows (1000+256+16 bytes) requiring additional pallocs
+create type test34_t as (cc varchar, xx bytea, g UUID);
+create function test34(varchar, integer) returns setof test34_t as 'pgtokdb', 'getset' language c;
+select count(*) from test34('test34', 100000);
+
+\echo ** Test35: Retrieving 10 million narrow rows (4 bytes)
+create type test35_t as (i integer);
+create function test35(varchar, integer) returns setof test35_t as 'pgtokdb', 'getset' language c;
+select count(*) from test35('test35', 1000000);
+
+\timing off
+
 -- Get rid of all testing artifacts
 \echo Dropping test schema: pgtokdb_test
 drop schema pgtokdb_test cascade;
