@@ -1,5 +1,3 @@
-/* Copyright: Hugh Hyndman 2019 */
-
 #include "pgtokdb.h"
 #include <fmgr.h>
 #include <funcapi.h>

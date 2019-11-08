@@ -1,5 +1,3 @@
-/* Copyright: Hugh Hyndman 2019 */
-
 #include "pgtokdb.h"
 
 int		_k2p_bool(K, int);
@@ -290,7 +288,7 @@ Datum k2p_int8array(K c, int i)
 			int n = p->n;  /* Number of elements */
 
 			/* Copy data from K structure to Datum list */
-			Datum *data = (Datum *) palloc(p->n * sizeof(Datum));
+			Datum *data = (Datum *) palloc0(n * sizeof(Datum));
 			for (int i = 0; i < n; i++)
 				data[i] = Int64GetDatum(list[i]);
 
@@ -322,7 +320,7 @@ Datum k2p_int4array(K c, int i)
 			int n = p->n;  /* Number of elements */
 
 			/* Copy data from K structure to Datum list */
-			Datum *data = (Datum *) palloc(p->n * sizeof(Datum));
+			Datum *data = (Datum *) palloc0(n * sizeof(Datum));
 			for (int i = 0; i < n; i++)
 				data[i] = Int32GetDatum(list[i]);
 
@@ -341,8 +339,3 @@ Datum k2p_int4array(K c, int i)
 	}
 	elog(ERROR, k2p_error, i, "integer[]");
 }
-
-
-
-
-
