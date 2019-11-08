@@ -12,6 +12,7 @@ uint8	_k2p_char(K, int);
 int64	_k2p_timestamp(K, int);
 int32	_k2p_date(K, int);
 
+
 K p2k_uuid(Datum x)
 {
 	return ku(*(U *) DatumGetUUIDP(x));
@@ -74,6 +75,11 @@ K p2k_bytea(Datum x)
 	K bytelist = ktn(KG, n); /* Create a kdb+ byte list */
 	memcpy(kG(bytelist), VARDATA(x), n); /* Copy data from Datum to K */
 	return bytelist; 
+}
+
+K p2k_int8array(Datum x)
+{
+	return NULL; //! Not implemented
 }
 
 
@@ -271,6 +277,40 @@ Datum k2p_char(K c, int i)
 {
 	return k2p_varchar(c, i);
 }
+
+/* Convert a kdb+ long (J) list, to an int8[] array in Postgres */
+Datum k2p_int8array(K c, int i)
+{
+	if (c->t == 0) /* If a list... */
+	{
+		K p = kK(c)[i];
+		if (p->t == KJ) /* ...of longs (J) */
+		{
+			int64 *list = (int64 *) kJ(p); /* Pointers to values */
+			int n = p->n;  /* Number of elements */
+
+			/* Copy data from K structure to Datum list */
+			Datum *data = (Datum *) palloc(p->n * sizeof(Datum));
+			for (int i = 0; i < n; i++)
+				data[i] = Int64GetDatum(list[i]);
+
+			/*
+			 * Use PG routine to construct the array. The magic 'd' comes from
+			 * inspecting the typalign column of table pg_type, as follows:
+			 * 
+			 * select typalign, typlen from pg_type where typname like 'int8';
+			 */
+			ArrayType *array = construct_array(data, n, INT8OID, 8, true, 'd');
+
+			pfree(data);
+
+			return PointerGetDatum(array);
+		}
+	}
+	elog(ERROR, k2p_error, i, "bigint[]");
+}
+
+
 
 
 

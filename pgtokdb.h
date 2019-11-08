@@ -6,6 +6,7 @@
 #include <utils/timestamp.h>
 #include <utils/builtins.h>
 #include <utils/uuid.h>
+#include <utils/array.h>
 
 #define KXVER 3
 #include "k.h"
@@ -38,6 +39,7 @@ Datum k2p_timestamp(K, int);
 Datum k2p_char(K, int);
 Datum k2p_date(K, int);
 Datum k2p_bytea(K, int);
+Datum k2p_int8array(K, int);
 
 K p2k_uuid(Datum);
 K p2k_bool(Datum);
@@ -51,5 +53,6 @@ K p2k_timestamp(Datum);
 K p2k_char(Datum);
 K p2k_date(Datum);
 K p2k_bytea(Datum);
+K p2k_int8array(Datum);
 
 #endif /* PKGTOKDB_H */

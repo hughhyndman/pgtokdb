@@ -27,11 +27,11 @@ K 		getset_args(FunctionCallInfo);
 /* Information needed across calls and stored in the function context */
 typedef struct
 {
-	K   	table;
-	int 	*perm;
-	int 	*todtind;
-	Datum 	*dvalues;
-	bool 	*nulls;
+	K   	table;		/* Table result of call to kdb+ */
+	int 	*perm;		/* Permutation order that map kdb+ columns with result columns */
+	int 	*todtind;	/* Indices into typo-oid dispatch table */
+	Datum 	*dvalues;	/* Datum for each column in the result */
+	bool 	*nulls;		/* Null indicator (always false) for each column */
 } UIFC; /* User Information Function Context */
 
 /* Type OID dispatch table used to determine conversion functions */
@@ -41,7 +41,7 @@ struct
 	Datum   (*k2p)(K, int);	/* Function to convert kdb+ to Postgres */
 	K		(*p2k)(Datum); 	/* Function to convert Postgres to kdb+ */
 	bool    isref;			/* Indicates whether Postgres Datum is a reference */
-} todt[14] =
+} todt[15] =
 {
 	{ BOOLOID,			k2p_bool,     	p2k_bool,		false },
 	{ INT2OID,			k2p_int2,     	p2k_int2,		false },
@@ -56,10 +56,18 @@ struct
 	{ DATEOID,			k2p_date,		p2k_date,		false },
 	{ UUIDOID,			k2p_uuid,		p2k_uuid,		true  },
 	{ TEXTOID,			k2p_varchar,	p2k_varchar,	true  },
-	{ BYTEAOID,			k2p_bytea,		p2k_bytea,		true  }
+	{ BYTEAOID,			k2p_bytea,		p2k_bytea,		true  },
+	{ INT8ARRAYOID,		k2p_int8array,	NULL,			true  }
 	/* ... add support for additional data types here ... */
 };
 
+/*
+ * Adding support for a new Postgres type requires the following:
+ *	- Add a new entry in dispatch table above
+ *	- Write conversion functions to map between kdb+ and Postgres (both ways)
+ *	- Write test cases for happy and exception paths
+ *	- Update README.md file and perhaps show an additional sample
+ */
 
 /* 
  * Return position of type OID in type dispatch table 
@@ -139,8 +147,8 @@ PGDLLEXPORT Datum getset(PG_FUNCTION_ARGS)
 	if (funcctx->call_cntr < kK(values)[0]->n)
 	{
 		/* Initialize components that make up the tuple (data and null indicators) */
-		Datum *dvalues = puifc->dvalues; //! (Datum *) palloc(natts * sizeof(Datum));
-		bool *nulls = puifc->nulls; //! (bool *) palloc0(natts * sizeof(bool)); 
+		Datum *dvalues = puifc->dvalues; 
+		bool *nulls = puifc->nulls;  
 
 		/* Convert columns from kdb+ format to Postgres format */
 		for (int i = 0; i < natts; i++)
@@ -156,8 +164,6 @@ PGDLLEXPORT Datum getset(PG_FUNCTION_ARGS)
 		for (int i = 0; i < natts; i++)
 			if (todt[todtind[i]].isref)
 				pfree((void *) dvalues[i]);
-
-		//! pfree(dvalues); pfree(nulls); /* Free memory between calls */
 
 		Datum result = HeapTupleGetDatum(tuple); /* Convert tuple to Datum */
 
@@ -240,18 +246,18 @@ void getset_init(FunctionCallInfo fcinfo)
 
 		/* Find matching data type conversion */
 		pos = findOID(attinmeta->tupdesc->attrs[i].atttypid);
-		if (pos == -1)
+		if (pos == -1 || todt[pos].k2p == NULL)
 			elog(ERROR, "Extension does not support datatype in column \"%s\"", attname);
 		todtind[i] = pos;
 	}
 
 	/* Keep values between calls in user context */
 	UIFC *puifc = (UIFC *) palloc0(sizeof(UIFC));
-	puifc->table = table;
-	puifc->perm = perm;
+	puifc->table = table; /* Keep kdb+ result in memory until all rows are returned */
+	puifc->perm = perm; 
 	puifc->todtind = todtind;
-	puifc->dvalues = (Datum *) palloc(natts * sizeof(Datum));
-	puifc->nulls = (bool *) palloc0(natts * sizeof(bool));
+	puifc->dvalues = (Datum *) palloc(natts * sizeof(Datum)); /* Datum for 1 row, all columns */
+	puifc->nulls = (bool *) palloc0(natts * sizeof(bool)); /* We don't support nulls */
 
 	funcctx->user_fctx = puifc;
 
@@ -274,6 +280,8 @@ K getset_args(FunctionCallInfo fcinfo)
 	ReleaseSysCache(tp);
 	int *pargoids = (int *) procform->proargtypes.values; /* Shorthand */
 
+	//! Could I use this instead? get_fn_expr_argtype(). Not as fast as above.
+
 	/* There has to be at least one argument and it must be varchar */
 	int nargs = PG_NARGS();
 	if (nargs == 0)
@@ -290,7 +298,7 @@ K getset_args(FunctionCallInfo fcinfo)
 		int oid = pargoids[i]; /* Argument type */
 
 		int ind = findOID(oid); /* Get data conversion */
-		if (ind < 0)
+		if (ind < 0 || todt[ind].p2k == NULL)
 			elog(ERROR, "Argument %d uses an unsupported type", i + 1);
 
 		/* Call conversion routine via dispatch table */

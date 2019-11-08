@@ -7,7 +7,7 @@ First, we create a Postgres function that wraps `getset`. This particular functi
 
 ```sql
 create type callkdb_t as (i integer, j bigint);
-create callkdb(varchar) returns setof callkdb_t as 'pgtokdb', 'getset' language c;
+create function callkdb(varchar) returns setof callkdb_t as 'pgtokdb', 'getset' language c;
 ```
 
 We have a tiny q function defined that returns a simple table. A kdb+ session is running listening on a configured port waiting for work.
@@ -107,7 +107,8 @@ date | d | date
 timestamp | d | timestamp
 char | c | varchar 
 char[] | C | varchar
-byte[] | X | bytea 
+byte[] | X | bytea
+long[] | J | bigint[] 
 symbol | s | varchar 
 
 The extension does support up-casting to data types where there won't be any data loss, for example kdb+ short to Postgres bigint. However there could be precision loss when casting integers to floats.

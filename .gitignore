@@ -1,6 +1,7 @@
+.DS_Store
 pgtokdb.o
 convert.o
-.DS_Store
 pgtokdb.so
-m
-makefile.old
+pgtokdb.dll
+pgtokdb.pdb
+pgtokdb.lib

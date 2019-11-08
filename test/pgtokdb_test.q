@@ -1,4 +1,5 @@
 
+
 assert:{$[x;::;'`$y];}
 
 test01:{[x] ([] j:til x)}
@@ -33,23 +34,23 @@ test09:{[x] ([] tt:1#enlist x)}
 
 test10:{[x] ([] xx:1#enlist x)}
 
-test11:{[h] ([] i:1#h; j:1#h; e:1#h; f:1#h)}
+test11:{[n] ([] jj:til each n?20)}
 
-test12:{[i] ([] j:1#i; e:1#i; f:1#i)}
+test12:{[h] ([] i:1#h; j:1#h; e:1#h; f:1#h)}
 
-test13:{[j] ([] e:1#j; f:1#j)}
+test13:{[i] ([] j:1#i; e:1#i; f:1#i)}
 
-test14:{[e] ([] f:1#e) }
+test14:{[j] ([] e:1#j; f:1#j)}
 
-test15:{1!([] j1:1 2 3; j2:1 2 3)}
+test15:{[e] ([] f:1#e) }
 
-test16:{([m] j:1#1)}
+test16:{1!([] j1:1 2 3; j2:1 2 3)}
 
-test17:{([] m:1#1)}
+test17:{([m] j:1#1)}
 
-test18:{([] j:1#1)}
+test18:{([] m:1#1)}
 
-test19:{([] c:1#23:50)}
+test19:{([] j:1#1)}
 
 test20:{([] c:1#23:50)}
 
@@ -71,17 +72,19 @@ test28:{([] c:1#23:50)}
 
 test29:{([] c:1#23:50)}
 
-test30:{assert[0;"An exception (assertion) in the kdb+ code"]}
+test30:{([] c:1#23:50)}
 
-test31:{([] j:1#1)}
+test31:{assert[0;"An exception (assertion) in the kdb+ code"]}
 
 test32:{([] j:1#1)}
 
 test33:{([] j:1#1)}
 
-test34:{[n] ([] cc:n#enlist 1000#"x" ; xx:n#enlist "x"$til 256 ; g:n?0Ng)}
+test34:{([] j:1#1)}
 
-test35:{[n] ([] i:"i"$til n)}
+test35:{[n] ([] cc:n#enlist 1000#"x" ; xx:n#enlist "x"$til 256 ; g:n?0Ng)}
+
+test36:{[n] ([] i:"i"$til n)}
 
 show "Ready to run tests."
 
@@ -108,7 +111,6 @@ renumber:{
 	f[i]:a[d?f[i]];
 	setfile[`:pgtokdb_test1.q;f];
 	}
-
 
 
 
