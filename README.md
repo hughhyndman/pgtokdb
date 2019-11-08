@@ -1,5 +1,5 @@
 # PostgreSQL to kdb+ Extension
-This  project is intended to allow Postgres command to access [kdb+](https://en.wikipedia.org/wiki/Kdb%2B) data. While Postgres has excellent transactional support for reference/master data, kdb+ offers a high-performance solution to storing and analyzing extreme volumes of timeseries data. By allowing developers to combine the data from both technologies through the standard interfaces that Postgres provides, this extension may expedite the development of new solutions.
+This  project is intended to allow Postgres to access [kdb+](https://en.wikipedia.org/wiki/Kdb%2B) data. While Postgres has excellent transactional support for reference/master data, kdb+ offers a high-performance solution to storing and analyzing extreme volumes of timeseries data. By allowing developers to combine the data from both technologies through the standard interfaces that Postgres provides, this extension may expedite the development of new solutions.
 
 The following is a gist of how the `pgtokdb` works. The extension has an entry point (a C function) named `getset` (a SRF: Set Returning Function), that handles communications between SQL and kdb+.
 
@@ -227,16 +227,18 @@ postgres=# copy (select * from pgtokdb.genddl(...)) to '/tmp/f.sql';
 
 ## Building the Extension
 
-TBD
+This whole section needs to be written. 
+
 ### Mac and Linux
 tbd
 
 ### Windows
 
-URL to Postgres page that describes the build process
-Install Perl
-Install clang
-Open a shell with x64 Native Tools Command Prompt for VS2019
+Notes:
+* URL to Postgres page that describes the build process
+* Install Perl
+* Install clang
+* Open a shell with x64 Native Tools Command Prompt for VS2019
 
 ### Regression Tests
 The project has a test directory that contains a lengthy PGSQL script (and matching kdb+ script) that runs through both happy and exception paths of the extension. To run these tests, first start a local instance of kdb+ that loads its script file and listens on port 5000.
