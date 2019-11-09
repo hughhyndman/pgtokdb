@@ -227,20 +227,20 @@ postgres=# copy (select * from pgtokdb.genddl(...)) to '/tmp/f.sql';
 
 ## Building the Extension
 
-This whole section needs to be written. 
+In order to build the extension, download the Postgres source from [postgres.org] and perform build and install. The Mac and Linux builds are quite straightforward using standard toolsets, however Windows required using Visual Studio and following the instructions on the Postgres site: [Building with Visual C++ or the Microsoft Windows SDK](https://www.postgresql.org/docs/12/install-windows-full.html).
 
-### Mac and Linux
-tbd
+I built the Windows version of Postgres by using Visual Studio 2019 Community Edition, with [ActiveState Perl](https://www.activestate.com/). 
 
-### Windows
+Once you have built and installed Postgres, the `pgtokdb` extension can be built. Two makefiles are provided: `makefile` (using make) for Linux and Mac builds, and `makefile.win` (using nmake) for Windows builds. 
 
-Notes:
-* URL to Postgres page that describes the build process
-* Install Perl
-* Install clang
-* Open a shell with x64 Native Tools Command Prompt for VS2019
+The makefiles have three targets: clean, all, and install. It is important to have pg_config in the path, since the Linux and Mac makefiles invoke it in order to determine necessary directories (e.g., include, libs, etc.). The Windows makefile has to be provided the value for PGROOT, which is the root directory of Postgres.
 
-### Regression Tests
+* make [clean|**all**|install] [DEBUG=0|**1**]
+* nmake -f makefile.win [clean|all|install] [PGROOT=dir] [DEBUG=0|**1**]
+
+The Windows build requires you to the build inside of the command shell entitled *x64 Native Tools Command Prompt for VS2019*. Furthermore, you should have clang installed, since this is the compiler used. When debugging under Windows, you can use the debugger in Visual Studio, however the pgtokdb.pdb (debug symbols) file should be moved to the same directory as pgtokdb.dll.
+
+## Regression Tests
 The project has a test directory that contains a lengthy PGSQL script (and matching kdb+ script) that runs through both happy and exception paths of the extension. To run these tests, first start a local instance of kdb+ that loads its script file and listens on port 5000.
 
 ```
