@@ -98,22 +98,26 @@ The table below summarizes the how the data types should be mapped between kdb+ 
 kdb+ | Code | Postgres
 :-- | :-: | :-- 
 boolean | b | boolean 
+GUID | g | UUID
 short | h | smallint (int2) 
 int | i | int (integer, int4)
 long | j | bigint (int8)
 real | e | real (float4) 
 float | f | double precision (float8)
-GUID | g | UUID
-date | d | date
-timestamp | d | timestamp
 char | c | varchar 
+symbol | s | varchar 
+timestamp | p | timestamp
+date | d | date
 char[] | C | varchar
 byte[] | X | bytea
-long[] | J | bigint[]
 int[] | I | integer[] 
-symbol | s | varchar 
+long[] | J | bigint[]
+real[] | E | real[]
+float[] | F | double precision[]
 
 The extension does support up-casting to data types where there won't be any data loss, for example kdb+ short to Postgres bigint. However there could be precision loss when casting integers to floats.
+
+Note that Postgres does not have a single byte data type, so kdb+ type x should be mapped to a Postgres integer type, where it will be up-casted. 
 
 ## Installation
 

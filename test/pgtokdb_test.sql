@@ -1,9 +1,9 @@
-
-
 \echo Creating test schema: pgtokdb_test
 SET client_min_messages = 'ERROR';
+\pset pager
 
 -- Create all test artifacts inside a temporary schema. It is easy to clean up
+-- when we are done by doing a "cascade" drop
 drop schema if exists pgtokdb_test cascade;
 create schema pgtokdb_test;
 set search_path to pgtokdb_test;
@@ -16,10 +16,25 @@ create function test01(varchar, integer) returns setof test01_t as 'pgtokdb', 'g
 select * from test01('test01', 1);
 
 \echo ** Test02: All types returned
-create type test02_t as (b boolean, h smallint, i integer, j bigint, e real, 
-	f double precision, p timestamp, c char, cc varchar);
+create type test02_t as (
+	b boolean,
+	x smallint, -- up-casting byte to small integer 
+	g UUID,
+	h smallint, 
+	i bigint, 
+	j bigint, 
+	e real, 
+	f double precision, 
+	c char,
+	s varchar, 
+	p timestamp, 
+	d date,
+	cc varchar,
+	ii integer[],
+	jj bigint[]
+	);
 create function test02(varchar, integer) returns setof test02_t as 'pgtokdb', 'getset' language c;
-select * from test02('test02', 1);
+select * from test02('test02', 2);
 
 \echo ** Test03: smallint (h) passed as argument and returned as result
 create type test03_t as (h smallint);
@@ -55,6 +70,11 @@ create type test08_t as (g UUID);
 create function test08(varchar, UUID) returns setof test08_t as 'pgtokdb', 'getset' language c;
 select * from test08('test08', 'A0EEBC99-9C0B-4EF8-BB6D-6BB9BD380A11');
 
+\echo ** Test51: varchar (s) type support
+create type test51_t as (s varchar);
+create function test51(varchar, integer) returns setof test51_t as 'pgtokdb', 'getset' language c;
+select * from test51('test51', 3);
+
 \echo ** Test09: text (C) type support
 create type test09_t as (tt text); 
 create function test09(varchar, text) returns setof test09_t as 'pgtokdb', 'getset' language c;
@@ -70,10 +90,20 @@ create type test11_t as (jj bigint[]);
 create function test11(varchar, integer) returns setof test11_t as 'pgtokdb', 'getset' language c;
 select * from test11('test11', 3);
 
-\echo ** Test50: int[] (I) type support
+\echo ** Test50: integer[] (I) type support
 create type test50_t as (ii integer[]);
 create function test50(varchar, integer) returns setof test50_t as 'pgtokdb', 'getset' language c;
 select * from test50('test50', 3);
+
+\echo ** Test52: real[] (E) type support
+create type test52_t as (ee real[]);
+create function test52(varchar, integer) returns setof test52_t as 'pgtokdb', 'getset' language c;
+select * from test52('test52', 3);
+
+\echo ** Test53: double precision[] (F) type support
+create type test53_t as (ff double precision[]);
+create function test53(varchar, integer) returns setof test53_t as 'pgtokdb', 'getset' language c;
+select * from test53('test53', 3);
 
 \echo ** Test12: Casting up kdb+ type h (short) to Postgres integer, bigint, real, and double precision
 create type test12_t as (i integer, j bigint, e real, f double precision);
@@ -101,7 +131,6 @@ select * from test15('test15', 5.5);
 \echo ** Test16: Error on kdb+ not returning unkeyed table
 create type test16_t as (j bigint);
 create function test16(varchar) returns setof test16_t as 'pgtokdb', 'getset' language c;
-select * from test16('til 10');
 select * from test16('test16[]');
 
 \echo ** Test17: Unsupported argument types
@@ -200,18 +229,19 @@ create function test34(
 select * from test34('test34[]', 1, 2, 3, 4, 5, 6, 7, 8, 9);
 
 \echo '************** Performance Testing **************'
-\timing on
 
 \echo ** Test35: Retrieving 100,000 wide rows (1000+256+16 bytes) requiring additional pallocs
 create type test35_t as (cc varchar, xx bytea, g UUID);
 create function test35(varchar, integer) returns setof test35_t as 'pgtokdb', 'getset' language c;
+\timing on
 select count(*) from test35('test35', 100000);
+\timing off
 
 \echo ** Test36: Retrieving 10 million narrow rows (4 bytes)
 create type test36_t as (i integer);
 create function test36(varchar, integer) returns setof test36_t as 'pgtokdb', 'getset' language c;
+\timing on
 select count(*) from test36('test36', 1000000);
-
 \timing off
 
 -- Get rid of all testing artifacts
@@ -219,4 +249,3 @@ select count(*) from test36('test36', 1000000);
 drop schema pgtokdb_test cascade;
 set search_path to public;
 set client_min_messages = 'notice';
-

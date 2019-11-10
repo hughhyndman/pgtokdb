@@ -4,17 +4,25 @@ assert:{$[x;::;'`$y];}
 
 test01:{[x] ([] j:til x)}
 
-test02:{[x]
+test02:{[num]
 	([]
-		b:x#01b;
-		h:"h"$til x;
-		i:"i"$til x;
-		j:til x;
-		e:3.1e*til x;
-		f:4.1f*til x;
-		p:.z.p+1000000000*til x;
-		c:x#"abc";
-		cc:"string",/:string til x
+		b:num#01b;
+		x:num#"x"$til 256;
+		g:num?0Ng; / Random GUIDs
+		h:"h"$til num;
+		i:"i"$til num;
+		j:til num;
+		e:3.1e*til num;
+		f:4.1f*til num;
+		c:num#"abc";
+		s:`$"symbol-",/:string til num; / Symbol
+		p:.z.p+1000000000*til num; / Timestamp
+		d:num#.z.d; / Date
+		cc:"char-",/:string til num; / Character array
+		xx:"x"$til each num?32; / Byte array
+		ii:"i"$til each num?20; / Integer array
+		jj:til each num?20; / Long array
+		ee:"e"til each num?20.2 / Real array
 		)
 	}
 
@@ -30,13 +38,19 @@ test07:{ ([] d:1#.z.d)}
 
 test08:{[x] ([] g:1#x)}
 
+test51:{[num] ([] s:`$"symbol-",/:string til num)}
+
 test09:{[x] ([] tt:1#enlist x)}
 
 test10:{[x] ([] xx:1#enlist x)}
 
 test11:{[n] ([] jj:til each n?20)}
 
-test50:{[n] ([] ii:{"i"$til x} each n?20)}
+test50:{[n] ([] ii:"i"$til each n?20)}
+
+test52:{[n] ([] ee:"e"$til each n?20)}
+
+test53:{[n] ([] ff:"f"$til each n?20)}
 
 test12:{[h] ([] i:1#h; j:1#h; e:1#h; f:1#h)}
 

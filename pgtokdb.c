@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "pgtokdb.h"
 #include <fmgr.h>
 #include <funcapi.h>
@@ -35,28 +52,30 @@ typedef struct
 /* Type OID dispatch table used to determine conversion functions */
 struct
 {
-	int     typeoid;		/* OID of Postgres type */
-	Datum   (*k2p)(K, int);	/* Function to convert kdb+ to Postgres */
-	K		(*p2k)(Datum); 	/* Function to convert Postgres to kdb+ */
-	bool    isref;			/* Indicates whether Postgres Datum is a reference */
-} todt[16] =
+	int     typeoid;				/* OID of Postgres type */
+	Datum   (*k2p)(K, int, char *);	/* Function to convert kdb+ to Postgres */
+	K		(*p2k)(Datum); 			/* Function to convert Postgres to kdb+ */
+	bool    isref;					/* Indicates whether Postgres Datum is a reference */
+} todt[18] =
 {
-	{ BOOLOID,			k2p_bool,     	p2k_bool,		false },
-	{ INT2OID,			k2p_int2,     	p2k_int2,		false },
-	{ INT4OID,			k2p_int4,     	p2k_int4,		false },
-	{ INT8OID,			k2p_int8,     	p2k_int8,		false },
-	{ FLOAT4OID,		k2p_float4,   	p2k_float4,		false },
-	{ FLOAT8OID,		k2p_float8,   	p2k_float8,		false },
-	{ BPCHAROID,		k2p_char,     	p2k_char,		true  },
-	{ TIMESTAMPOID,		k2p_timestamp,	p2k_timestamp,	false },
-	{ TIMESTAMPTZOID,	k2p_timestamp,	p2k_timestamp,	false },
-	{ VARCHAROID,		k2p_varchar,  	p2k_varchar,	true  },
-	{ DATEOID,			k2p_date,		p2k_date,		false },
-	{ UUIDOID,			k2p_uuid,		p2k_uuid,		true  },
-	{ TEXTOID,			k2p_varchar,	p2k_varchar,	true  },
-	{ BYTEAOID,			k2p_bytea,		p2k_bytea,		true  },
-	{ INT8ARRAYOID,		k2p_int8array,	NULL,			true  },
-	{ INT4ARRAYOID,		k2p_int4array,	NULL,			true  }
+	{ BOOLOID,			k2p_bool,     		p2k_bool,		false },
+	{ INT2OID,			k2p_int2,     		p2k_int2,		false },
+	{ INT4OID,			k2p_int4,     		p2k_int4,		false },
+	{ INT8OID,			k2p_int8,     		p2k_int8,		false },
+	{ FLOAT4OID,		k2p_float4,   		p2k_float4,		false },
+	{ FLOAT8OID,		k2p_float8,   		p2k_float8,		false },
+	{ BPCHAROID,		k2p_char,     		p2k_char,		true  },
+	{ TIMESTAMPOID,		k2p_timestamp,		p2k_timestamp,	false },
+	{ TIMESTAMPTZOID,	k2p_timestamp,		p2k_timestamp,	false },
+	{ VARCHAROID,		k2p_varchar,  		p2k_varchar,	true  },
+	{ DATEOID,			k2p_date,			p2k_date,		false },
+	{ UUIDOID,			k2p_uuid,			p2k_uuid,		true  },
+	{ TEXTOID,			k2p_varchar,		p2k_varchar,	true  },
+	{ BYTEAOID,			k2p_bytea,			p2k_bytea,		true  },
+	{ INT8ARRAYOID,		k2p_int8array,		NULL,			true  },
+	{ INT4ARRAYOID,		k2p_int4array,		NULL,			true  },
+	{ FLOAT4ARRAYOID,	k2p_float4array, 	NULL,			true  },
+	{ FLOAT8ARRAYOID,	k2p_float8array, 	NULL,			true  }
 	/* ... add support for additional data types here ... */
 };
 
@@ -135,6 +154,7 @@ PGDLLEXPORT Datum getset(PG_FUNCTION_ARGS)
 
 	/* Get user context values that are kept across calls */
 	UIFC *puifc = (UIFC *) funcctx->user_fctx; 
+	K colnames = kK(puifc->table->k)[0]; /* Column names of kdb+ result */
 	K values = kK(puifc->table->k)[1]; /* Columns of the kdb+ result */
 	int *perm = puifc->perm; /* Permutation order that map table columns with result columns */
 	int *todtind = puifc->todtind; /* Indices into typo-oid dispatch table */
@@ -153,7 +173,10 @@ PGDLLEXPORT Datum getset(PG_FUNCTION_ARGS)
 		for (int i = 0; i < natts; i++)
 		{
 			dvalues[i] = 
-				(todt[todtind[i]].k2p)(kK(values)[perm[i]], funcctx->call_cntr);
+				(todt[todtind[i]].k2p)(
+					kK(values)[perm[i]], /* kdb+ column array */
+					funcctx->call_cntr, /* Current row to fetch */
+					kS(colnames)[perm[i]]); /* kdb+ column name (for error reporting) */
 		}
 
 		/* Create a tuple given a complete row of values */

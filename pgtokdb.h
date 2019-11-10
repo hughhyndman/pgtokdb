@@ -26,35 +26,34 @@ CppConcat(pg_finfo_,funcname) (void) \
 } \
 extern int no_such_variable
 
-
-Datum k2p_uuid(K, int);
-Datum k2p_bool(K, int);
-Datum k2p_int2(K, int);
-Datum k2p_int4(K, int);
-Datum k2p_int8(K, int);
-Datum k2p_float4(K, int);
-Datum k2p_float8(K, int);
-Datum k2p_varchar(K, int);
-Datum k2p_timestamp(K, int);
-Datum k2p_char(K, int);
-Datum k2p_date(K, int);
-Datum k2p_bytea(K, int);
-Datum k2p_int8array(K, int);
-Datum k2p_int4array(K, int);
-
-K p2k_uuid(Datum);
 K p2k_bool(Datum);
+K p2k_uuid(Datum);
 K p2k_int2(Datum);
 K p2k_int4(Datum);
 K p2k_int8(Datum);
 K p2k_float4(Datum);
 K p2k_float8(Datum);
+K p2k_char(Datum);
 K p2k_varchar(Datum);
 K p2k_timestamp(Datum);
-K p2k_char(Datum);
 K p2k_date(Datum);
 K p2k_bytea(Datum);
-K p2k_int8array(Datum);
 
+Datum k2p_bool(K, int, char *);
+Datum k2p_uuid(K, int, char *);
+Datum k2p_int2(K, int, char *);
+Datum k2p_int4(K, int, char *);
+Datum k2p_int8(K, int, char *);
+Datum k2p_float4(K, int, char *);
+Datum k2p_float8(K, int, char *);
+Datum k2p_char(K, int, char *);
+Datum k2p_varchar(K, int, char *);
+Datum k2p_timestamp(K, int, char *);
+Datum k2p_date(K, int, char *);
+Datum k2p_bytea(K, int, char *);
+Datum k2p_int4array(K, int, char *);
+Datum k2p_int8array(K, int, char *);
+Datum k2p_float4array(K, int, char *);
+Datum k2p_float8array(K, int, char *);
 
 #endif /* PKGTOKDB_H */
