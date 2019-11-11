@@ -184,7 +184,7 @@ Although this is not scientific, the following provides some information on the 
 
 In kdb+, we create a 100 million row table with a single bigint column, containing the numbers from 0 rising monotonically upwards. The `\t` that follows the q prompt indicates that we want to time the operation. I have turned `\timing on` in my psql session.
 
-```
+```q
 q)\t `:kdbtbl set ([] j:til 100000000) / Create table on disk
 1498 (ms)
 
@@ -202,14 +202,14 @@ q)\t select sum j from kdbtbl / Time the operation
 
 Below, we create at Postgres function that calls a kdb+ query, and receives a single bigint column.
 
-```
+```sql
 postgres=# create type foo_t as (j bigint);
 postgres=# create function foo(varchar) returns setof foo_t as 'pgtokdb', 'getset' language 'c';
 ```
 
 Let's invoke the function and have all 100 million rows returned to Postgres, for it to sum up the `j` value. We are essentially moving 800MB across a socket, and passing each bigint to Postgres to sum.
 
-```
+```sql
 postgres=# select sum(j) from foo('select j from kdbtbl');
        sum        
 ------------------
@@ -219,7 +219,7 @@ Time: 24671.273 ms (00:24.671)
 
 Now, we'll copy all the data from the kdb+ table and store it in a Postgres table. After that, we'll get Postgres to do the sum of its own data.
 
-```
+```sql
 postgres=# select * into pgtbl from foo('select j from kdbtbl');
 Time: 151502.628 ms (02:31.503)
 
@@ -232,7 +232,7 @@ Time: 15614.525 ms (00:15.615)
 
 Lastly, we'll shift the processing of the sum from Postgres to kdb+, which provides a much more efficient solution. 
 
-```
+```sql
 postgres=# select j from foo('select sum j from kdbtbl');
         j         
 ------------------
