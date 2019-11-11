@@ -12,8 +12,8 @@
 #include "k.h"
 
 /*
- * Redefine this PG_FUNCTION_INFO_V1 (found in PG's include\fmgr.h) so that 
- * funcname is declared with PGDLLEXPORT -- which is required for a Windows build.
+ * Redefine PG_FUNCTION_INFO_V1 (found in PG's include\fmgr.h) so that funcname
+ * is declared with PGDLLEXPORT -- which is required for a Windows build.
  */
 #define PG_FUNCTION_INFO_CUSTOM(funcname) \
 extern PGDLLEXPORT Datum funcname(PG_FUNCTION_ARGS); \

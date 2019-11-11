@@ -1,6 +1,7 @@
 
-
 assert:{$[x;::;'`$y];}
+
+/ Happy path testing
 
 test01:{[x] ([] j:til x)}
 
@@ -22,7 +23,8 @@ test02:{[num]
 		xx:"x"$til each num?32; / Byte array
 		ii:"i"$til each num?20; / Integer array
 		jj:til each num?20; / Long array
-		ee:"e"til each num?20.2 / Real array
+		ee:0.1e*til each til num; / Real array
+		ff:0.1f*til each til num / Float array
 		)
 	}
 
@@ -38,43 +40,37 @@ test07:{ ([] d:1#.z.d)}
 
 test08:{[x] ([] g:1#x)}
 
-test51:{[num] ([] s:`$"symbol-",/:string til num)}
+test09:{[num] ([] s:`$"symbol-",/:string til num)}
 
-test09:{[x] ([] tt:1#enlist x)}
+test10:{[x] ([] tt:1#enlist x)}
 
-test10:{[x] ([] xx:1#enlist x)}
+test11:{[x] ([] xx:1#enlist x)}
 
-test11:{[n] ([] jj:til each n?20)}
+test12:{[n] ([] jj:til each n?20)}
 
-test50:{[n] ([] ii:"i"$til each n?20)}
+test13:{[n] ([] ii:"i"$til each n?20)}
 
-test52:{[n] ([] ee:"e"$til each n?20)}
+test14:{[n] ([] ee:0.1e*til each n?20)}
 
-test53:{[n] ([] ff:"f"$til each n?20)}
+test15:{[n] ([] ff:0.1f*til each n?20)}
 
-test12:{[h] ([] i:1#h; j:1#h; e:1#h; f:1#h)}
+test16:{[h] ([] i:1#h; j:1#h; e:1#h; f:1#h)}
 
-test13:{[i] ([] j:1#i; e:1#i; f:1#i)}
+test17:{[i] ([] j:1#i; e:1#i; f:1#i)}
 
-test14:{[j] ([] e:1#j; f:1#j)}
+test18:{[j] ([] e:1#j; f:1#j)}
 
-test15:{[e] ([] f:1#e) }
+test19:{[e] ([] f:1#e) }
 
-test16:{1!([] j1:1 2 3; j2:1 2 3)}
+/ Exception path testing
 
-test17:{([m] j:1#1)}
+test20:{1!([] j1:1 2 3; j2:1 2 3)}
 
-test18:{([] m:1#1)}
+test21:{([m] j:1#1)}
 
-test19:{([] j:1#1)}
+test22:{([] m:1#1)}
 
-test20:{([] c:1#23:50)}
-
-test21:{([] c:1#23:50)}
-
-test22:{([] c:1#23:50)}
-
-test23:{([] c:1#23:50)}
+test23:{([] j:1#1)}
 
 test24:{([] c:1#23:50)}
 
@@ -90,17 +86,33 @@ test29:{([] c:1#23:50)}
 
 test30:{([] c:1#23:50)}
 
-test31:{assert[0;"An exception (assertion) in the kdb+ code"]}
+test31:{([] c:1#23:50)}
 
-test32:{([] j:1#1)}
+test32:{([] c:1#23:50)}
 
-test33:{([] j:1#1)}
+test33:{([] c:1#23:50)}
 
-test34:{([] j:1#1)}
+test34:{([] c:1#23:50)}
 
-test35:{[n] ([] cc:n#enlist 1000#"x" ; xx:n#enlist "x"$til 256 ; g:n?0Ng)}
+test35:{([] ii:til 10)}
 
-test36:{[n] ([] i:"i"$til n)}
+test36:{([] ii:1#enlist til 10)} / Return a J instead of intended I
+
+test37:{([] ii:1#enlist `a`b`c)} / To test unsupport array type
+
+test38:{assert[0;"An exception (assertion) in the kdb+ code"]}
+
+test39:{([] j:1#1)}
+
+test40:{([] j:1#1)}
+
+test41:{([] j:1#1)}
+
+/ Performance testing
+
+test42:{[n] ([] cc:n#enlist 1000#"x" ; xx:n#enlist "x"$til 256 ; g:n?0Ng)}
+
+test43:{[n] ([] i:"i"$til n)}
 
 show "Ready to run tests."
 
@@ -127,7 +139,5 @@ renumber:{
 	f[i]:a[d?f[i]];
 	setfile[`:pgtokdb_test1.q;f];
 	}
-
-
 
 

@@ -178,6 +178,68 @@ pgtokdb.userpass | user:pass | None provided
 
 Note that configuration settings are read initially when a Postgres process loads the extension. To reread the settings, the process will need to restart.
 
+## Performance
+
+Although this is not scientific, the following provides some information on the performance characteristics of the extension, as well as kdb+ and Postgres. These tests were run on my circa 2014 Macbook Pro, with an SSD drive. 
+
+In kdb+, we create a 100 million row table with a single bigint column, containing the numbers from 0 rising monotonically upwards. The `\t` that follows the q prompt indicates that we want to time the operation. I have turned `\timing on` in my psql session.
+
+```
+q)\t `:kdbtbl set ([] j:til 100000000) / Create table on disk
+1498 (ms)
+
+q)\l kdbtbl
+`kdbtbl
+
+q)select sum j from kdbtbl / Add up all the values
+j               
+----------------
+4999999950000000
+
+q)\t select sum j from kdbtbl / Time the operation
+62 (ms)
+```
+
+Below, we create at Postgres function that calls a kdb+ query, and receives a single bigint column.
+
+```
+postgres=# create type foo_t as (j bigint);
+postgres=# create function foo(varchar) returns setof foo_t as 'pgtokdb', 'getset' language 'c';
+```
+
+Let's invoke the function and have all 100 million rows returned to Postgres, for it to sum up the `j` value. We are essentially moving 800MB across a socket, and passing each bigint to Postgres to sum.
+
+```
+postgres=# select sum(j) from foo('select j from kdbtbl');
+       sum        
+------------------
+ 4999999950000000
+Time: 24671.273 ms (00:24.671)
+```
+
+Now, we'll copy all the data from the kdb+ table and store it in a Postgres table. After that, we'll get Postgres to do the sum of its own data.
+
+```
+postgres=# select * into pgtbl from foo('select j from kdbtbl');
+Time: 151502.628 ms (02:31.503)
+
+postgres=# select sum(j) from pgtbl;
+       sum        
+------------------
+ 4999999950000000
+Time: 15614.525 ms (00:15.615)
+```
+
+Lastly, we'll shift the processing of the sum from Postgres to kdb+, which provides a much more efficient solution. 
+
+```
+postgres=# select j from foo('select sum j from kdbtbl');
+        j         
+------------------
+ 4999999950000000
+Time: 71.102 ms
+```
+
 ## Utilities
 Writing wrapper Postgres function and types to specific kdb+ queries is cumbersome, so convenenient utility functions (both kdb+ and Postgres) are provided with the installation.
 

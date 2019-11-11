@@ -26,6 +26,8 @@ double	_k2p_float8(K, int, char *);
 uint8	_k2p_char(K, int, char *);
 int64	_k2p_timestamp(K, int, char *);
 int32	_k2p_date(K, int, char *);
+Datum 	_k2p_array(K, int, signed char, char *, char *);
+
 
 K p2k_bool(Datum x)
 {
@@ -289,129 +291,84 @@ Datum k2p_bytea(K c, int i, char *n)
 /* Convert a kdb+ int list (I), to an integer[] array in Postgres */
 Datum k2p_int4array(K c, int i, char *n)
 {
-	if (c->t == 0) /* If a list... */
-	{
-		K p = kK(c)[i];
-		if (p->t == KI) /* ...of ints (I) */
-		{
-			int32 *list = (int32 *) kI(p); /* Pointers to values */
-			int l = p->n;  /* Number of elements */
-
-			/* Copy data from K structure to Datum list */
-			Datum *data = (Datum *) palloc0(l * sizeof(Datum));
-			for (int i = 0; i < l; i++)
-				data[i] = Int32GetDatum(list[i]);
-
-			/*
-			 * Use PG routine to construct the array. The magic 'i' comes from
-			 * inspecting the typalign column of table pg_type, as follows:
-			 * 
-			 * select typalign, typlen from pg_type where typname like 'int4';
-			 */
-			ArrayType *array = construct_array(data, l, INT4OID, 4, true, 'i');
-
-			pfree(data);
-
-			return PointerGetDatum(array);
-		}
-	}
-	elog(ERROR, k2p_error, n, "integer[]");
+	return _k2p_array(c, i, KI, n, "integer[]");
 }
 
-/* Convert a kdb+ long list (J), to an int8[] array in Postgres */
+/* Convert a kdb+ long list (J), to an bigint[] array in Postgres */
 Datum k2p_int8array(K c, int i, char *n)
 {
-	if (c->t == 0) /* If a list... */
-	{
-		K p = kK(c)[i];
-		if (p->t == KJ) /* ...of longs (J) */
-		{
-			int64 *list = (int64 *) kJ(p); /* Pointers to values */
-			int l = p->n;  /* Number of elements */
-
-			/* Copy data from K structure to Datum list */
-			Datum *data = (Datum *) palloc0(l * sizeof(Datum));
-			for (int i = 0; i < l; i++)
-				data[i] = Int64GetDatum(list[i]);
-
-			/*
-			 * Use PG routine to construct the array. The magic 'd' comes from
-			 * inspecting the typalign column of table pg_type, as follows:
-			 * 
-			 * select typalign, typlen from pg_type where typname like 'int8';
-			 */
-			ArrayType *array = construct_array(data, l, INT8OID, 8, true, 'd');
-
-			pfree(data);
-
-			return PointerGetDatum(array);
-		}
-	}
-	elog(ERROR, k2p_error, n, "bigint[]");
+	return _k2p_array(c, i, KJ, n, "bigint[]");
 }
 
 /* Convert a kdb+ real list (E), to an real[] array in Postgres */
 Datum k2p_float4array(K c, int i, char *n)
 {
-	if (c->t == 0) /* If a list... */
-	{
-		K p = kK(c)[i];
-		if (p->t == KE) /* ...of reals (E) */
-		{
-			float *list = (float *) kE(p); /* Pointers to values */
-			int l = p->n;  /* Number of elements */
-
-			/* Copy data from K structure to Datum list */
-			Datum *data = (Datum *) palloc0(l * sizeof(Datum));
-			for (int i = 0; i < l; i++)
-				data[i] = Float4GetDatum(list[i]);
-
-			/*
-			 * Use PG routine to construct the array. The magic 'i' comes from
-			 * inspecting the typalign column of table pg_type, as follows:
-			 * 
-			 * select typalign, typlen from pg_type where typname like 'float4';
-			 */
-			ArrayType *array = construct_array(data, l, FLOAT4OID, 4, true, 'i');
-
-			pfree(data);
-
-			return PointerGetDatum(array);
-		}
-	}
-	elog(ERROR, k2p_error, n, "real[]");
+	return _k2p_array(c, i, KE, n, "real[]");
 }
 
-/* Convert a kdb+ real list (E), to an real[] array in Postgres */
+/* Convert a kdb+ float list (F), to an double precision[] array in Postgres */
 Datum k2p_float8array(K c, int i, char *n)
 {
-	if (c->t == 0) /* If a list... */
-	{
-		K p = kK(c)[i];
-		if (p->t == KF) /* ...of floats (F) */
-		{
-			float8 *list = (float8 *) kF(p); /* Pointers to values */
-			int l = p->n;  /* Number of elements */
-
-			/* Copy data from K structure to Datum list */
-			Datum *data = (Datum *) palloc0(l * sizeof(Datum));
-			for (int i = 0; i < l; i++)
-				data[i] = Float8GetDatum(list[i]);
-
-			/*
-			 * Use PG routine to construct the array. The magic 'i' comes from
-			 * inspecting the typalign column of table pg_type, as follows:
-			 * 
-			 * select typalign, typlen from pg_type where typname like 'float8';
-			 */
-			ArrayType *array = construct_array(data, l, FLOAT8OID, 8, true, 'd');
-
-			pfree(data);
-
-			return PointerGetDatum(array);
-		}
-	}
-	elog(ERROR, k2p_error, n, "double precision[]");
+	return _k2p_array(c, i, KF, n, "double precision[]");
 }
 
+/*
+ * Convert row of a table column (containing lists) to a Postgres array. 
+ *
+ * klol   - kdb+ list of lists, representing a table column: ([] jj:(1 2;3 4 5))
+ * krow   - Index into above (specifies a table row)
+ * ktype  - Mandatory type of kdb+ list
+ * kname  - Name of kdb+ column for error reporting
+ * pgtype - Postgres data type name for error reporting
+ */
+Datum _k2p_array(K klol, int krow, signed char ktype, char *kname, char *pgtype) 
+{
+	Oid 	elmtype;
+	int 	elmlen;
+	char 	elmalign;
+	int 	i;
 
+	if (klol->t != 0)
+		elog(ERROR, k2p_error, kname, pgtype);
+
+	K list = kK(klol)[krow]; /* Get specific row, which points to a list */
+	if (list->t != ktype)
+		elog(ERROR, k2p_error, kname, pgtype);
+
+	int arrlen = list->n;  /* Number of elements */
+	Datum *data = (Datum *) palloc0(arrlen * sizeof(Datum));
+
+	switch (list->t)
+	{
+		case KI:
+			elmtype = INT4OID; elmlen = sizeof(int32); elmalign = 'i';
+			for (i = 0; i < arrlen; i++)
+				data[i] = Int32GetDatum(kI(list)[i]);
+			break;
+
+		case KJ:
+			elmtype = INT8OID; elmlen = sizeof(int64); elmalign = 'd';
+			for (i = 0; i < arrlen; i++)
+				data[i] = Int64GetDatum(kJ(list)[i]);
+			break;
+
+		case KE:
+			elmtype = FLOAT4OID; elmlen = sizeof(float4); elmalign = 'i';
+			for (i = 0; i < arrlen; i++)
+				data[i] = Float4GetDatum(kE(list)[i]);
+			break;
+
+		case KF:
+			elmtype = FLOAT8OID; elmlen = sizeof(float8); elmalign = 'd';
+			for (i = 0; i < arrlen; i++)
+				data[i] = Float8GetDatum(kF(list)[i]);
+			break;
+
+		default:
+			elog(ERROR, k2p_error, kname, pgtype);
+	}
+
+	ArrayType *array = construct_array(data, arrlen, elmtype, elmlen, true, elmalign);
+	pfree(data);
+	return PointerGetDatum(array);
+}
