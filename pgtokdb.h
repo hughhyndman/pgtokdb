@@ -51,6 +51,7 @@ Datum k2p_varchar(K, int, char *);
 Datum k2p_timestamp(K, int, char *);
 Datum k2p_date(K, int, char *);
 Datum k2p_bytea(K, int, char *);
+Datum k2p_int2array(K, int, char *);
 Datum k2p_int4array(K, int, char *);
 Datum k2p_int8array(K, int, char *);
 Datum k2p_float4array(K, int, char *);

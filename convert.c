@@ -93,7 +93,9 @@ K p2k_bytea(Datum x)
 	return bytelist; 
 }
 
-static const char *k2p_error = "Unable to convert kdb+ column '%s' to %s";
+
+
+static const char *k2p_msg = "Unable to convert kdb+ column '%s' to %s";
 
 Datum k2p_bool(K c, int i, char *n)
 {
@@ -105,7 +107,7 @@ int _k2p_bool(K c, int i, char *n)
 	switch (c->t)
 	{
 		case KB: return kC(c)[i];
-		default: elog(ERROR, k2p_error, n, "boolean");
+		default: elog(ERROR, k2p_msg, n, "boolean");
 	}
 }
 
@@ -119,7 +121,7 @@ Datum k2p_uuid(K c, int i, char *n)
 		*retval = *(pg_uuid_t *) &kU(c)[i]; 
 		return PointerGetDatum(retval);
 	}
-	elog(ERROR, k2p_error, n, "UUID");
+	elog(ERROR, k2p_msg, n, "UUID");
 }
 
 Datum k2p_int2(K c, int i, char *n)
@@ -134,7 +136,7 @@ int16 _k2p_int2(K c, int i, char *n)
 		case KG: return kG(c)[i];
 		case KC: return kC(c)[i];
 		case KH: return kH(c)[i]; 
-		default:elog(ERROR, k2p_error, n, "smallint (int16))");
+		default:elog(ERROR, k2p_msg, n, "smallint (int16))");
 	}
 }
 
@@ -151,7 +153,7 @@ int32 _k2p_int4(K c, int i, char *n)
 		case KC: return kC(c)[i];
 		case KH: return kH(c)[i]; 
 		case KI: return kI(c)[i];
-		default:elog(ERROR, k2p_error, n, "integer (int32)");
+		default:elog(ERROR, k2p_msg, n, "integer (int32)");
 	}
 }
 
@@ -169,7 +171,7 @@ int64 _k2p_int8(K c, int i, char *n)
 		case KH: return kH(c)[i]; 
 		case KI: return kI(c)[i];
 		case KJ: return kJ(c)[i];
-		default:elog(ERROR, k2p_error, n, "bigint (int64)");
+		default:elog(ERROR, k2p_msg, n, "bigint (int64)");
 	}
 }
 
@@ -187,7 +189,7 @@ float _k2p_float4(K c, int i, char *n)
 		case KJ: return kJ(c)[i];
 		case KE: return kE(c)[i];
 		case KF: return kF(c)[i];
-		default:elog(ERROR, k2p_error, n, "real (float4)");
+		default:elog(ERROR, k2p_msg, n, "real (float4)");
 	}
 }
 
@@ -205,7 +207,7 @@ double _k2p_float8(K c, int i, char *n)
 		case KJ: return kJ(c)[i];
 		case KE: return kE(c)[i];
 		case KF: return kF(c)[i];
-		default:elog(ERROR, k2p_error, n, "double precision (float8)");
+		default:elog(ERROR, k2p_msg, n, "double precision (float8)");
 	}
 }
 
@@ -233,7 +235,7 @@ Datum k2p_varchar(K c, int i, char *n)
 		return (Datum) cstring_to_text(kS(c)[i]);
 	}
 
-	elog(ERROR, k2p_error, n, "varchar");
+	elog(ERROR, k2p_msg, n, "varchar");
 }
 
 Datum k2p_char(K c, int i, char *n)
@@ -251,7 +253,7 @@ int64 _k2p_timestamp(K c, int i, char *n)
 	switch (c->t)
 	{
 		case KP: return kJ(c)[i] / 1000; /* Remove nanoseconds */
-		default: elog(ERROR, k2p_error, n, "timestamp");
+		default: elog(ERROR, k2p_msg, n, "timestamp");
 	}
 }
 
@@ -265,7 +267,7 @@ int32 _k2p_date(K c, int i, char *n)
 	switch (c->t)
 	{
 		case KD: return kI(c)[i];
-		default: elog(ERROR, k2p_error, n, "date");
+		default: elog(ERROR, k2p_msg, n, "date");
 	}
 }
 
@@ -285,7 +287,13 @@ Datum k2p_bytea(K c, int i, char *n)
 			return PointerGetDatum(datum);
 		}
 	}
-	elog(ERROR, k2p_error, n, "bytea");
+	elog(ERROR, k2p_msg, n, "bytea");
+}
+
+/* Convert a kdb+ short list (H), to an smallint[] array in Postgres */
+Datum k2p_int2array(K c, int i, char *n)
+{
+	return _k2p_array(c, i, KH, n, "smallint[]");
 }
 
 /* Convert a kdb+ int list (I), to an integer[] array in Postgres */
@@ -328,18 +336,24 @@ Datum _k2p_array(K klol, int krow, signed char ktype, char *kname, char *pgtype)
 	char 	elmalign;
 	int 	i;
 
-	if (klol->t != 0)
-		elog(ERROR, k2p_error, kname, pgtype);
+	if (klol->t != 0) /* It must be a list */
+		elog(ERROR, k2p_msg, kname, pgtype);
 
 	K list = kK(klol)[krow]; /* Get specific row, which points to a list */
 	if (list->t != ktype)
-		elog(ERROR, k2p_error, kname, pgtype);
+		elog(ERROR, k2p_msg, kname, pgtype);
 
 	int arrlen = list->n;  /* Number of elements */
 	Datum *data = (Datum *) palloc0(arrlen * sizeof(Datum));
 
 	switch (list->t)
 	{
+		case KH:
+			elmtype = INT2OID; elmlen = sizeof(int16); elmalign = 's';
+			for (i = 0; i < arrlen; i++)
+				data[i] = Int16GetDatum(kH(list)[i]);
+			break;		
+
 		case KI:
 			elmtype = INT4OID; elmlen = sizeof(int32); elmalign = 'i';
 			for (i = 0; i < arrlen; i++)
@@ -365,7 +379,7 @@ Datum _k2p_array(K klol, int krow, signed char ktype, char *kname, char *pgtype)
 			break;
 
 		default:
-			elog(ERROR, k2p_error, kname, pgtype);
+			elog(ERROR, k2p_msg, kname, pgtype);
 	}
 
 	ArrayType *array = construct_array(data, arrlen, elmtype, elmlen, true, elmalign);
