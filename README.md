@@ -1,16 +1,16 @@
 # PostgreSQL to kdb+ Extension
 This project is the implementation of an Postgres Extension that allows Postgres processes to access [kdb+](https://en.wikipedia.org/wiki/Kdb%2B) data through its SQL interface. While Postgres has excellent transactional support for reference/master data, kdb+ offers a high-performance solution to storing and analyzing extreme volumes of timeseries data. By allowing developers to combine the data from both technologies through the standard interfaces that Postgres provides, this extension may expedite the development of new solutions.
 
-The following is a gist of how the `pgtokdb` works. The extension has an entry point (a C function) named `getset` (a SRF: Set Returning Function), that handles communications between SQL and kdb+.
+The following provides a gist of how the `pgtokdb` works. The extension has an entry point (a C function) named `getset` (an SRF: Set Returning Function) that handles communications between SQL and kdb+.
 
-First, we create a Postgres function that wraps `getset`. This particular function takes a q-language expression that returns a simple table of two columns: i and j, 4-byte and 8-byte integers respectively.
+We now create a Postgres function that wraps `getset`. This particular function takes a kdb+ expression that returns a result set of two columns: i and j, 4-byte and 8-byte integers respectively.
 
 ```sql
 create type callkdb_t as (i integer, j bigint);
 create function callkdb(varchar) returns setof callkdb_t as 'pgtokdb', 'getset' language c;
 ```
 
-We have a tiny q function defined that returns a simple table. A kdb+ session is running listening on a configured port waiting for work.
+We have a kdb+ function defined that returns the record set. This function using in a kdb+ session that is listening on a configured port waiting for work.
 
 ```q
 q)qfn[]
@@ -58,12 +58,12 @@ Below is a bit more complex example. We want to invoke a kdb+ function that has 
 
 ```q
 fun:{[numrows]
-    / Generate unkeyed table with <numrows> rows
+    // Generate unkeyed table with <numrows> rows
     ([]
-        id:numrows?1000; / Random bigints (j)
-        vals:numrows?999.9; / Random floats (f)
-        ts:.z.p+1000000000*til numrows; / Array of timestamps (p), starting at now 
-        str:"string" ,/: string til numrows / Just some strings (C)
+        id:numrows?1000; // Random bigints (j)
+        vals:numrows?999.9; // Random floats (f)
+        ts:.z.p+1000000000*til numrows; // Array of timestamps (p), starting at now 
+        str:"string" ,/: string til numrows // Just some strings (C)
         )
    }
 ```
@@ -92,23 +92,23 @@ Finally, there are many regression tests in the project [test directory](https:/
 
 ## Performance
 
-Although this is not scientific, the following provides some information on the performance characteristics of the extension, as well as kdb+ and Postgres. These tests were run on my circa 2014 Macbook Pro, with an SSD drive. 
+Although not very scientific, the following example provides some information on the performance characteristics of the extension, as well as kdb+ and Postgres. These tests were run on my circa 2014 Macbook Pro, with an SSD drive. 
 
-In kdb+, we create a 100 million row table with a single bigint column, containing the numbers from 0 rising monotonically upwards. The `\t` that follows the q prompt indicates that we want to time the operation. I have turned `\timing on` in my psql session.
+In kdb+, we create a 100 million row table with a single bigint column, containing the numbers from 0 rising monotonically upwards. The `\t` that follows the q prompt indicates that we want to time the operation.
 
 ```q
-q)\t `:kdbtbl set ([] j:til 100000000) / Create table on disk
+q)\t `:kdbtbl set ([] j:til 100000000) // Create table on disk
 1498 (ms)
 
-q)\l kdbtbl
+q)\l kdbtbl // Load table
 `kdbtbl
 
-q)select sum j from kdbtbl / Add up all the values
+q)select sum j from kdbtbl // Add up all the values
 j               
 ----------------
 4999999950000000
 
-q)\t select sum j from kdbtbl / Time the operation
+q)\t select sum j from kdbtbl // Time the operation
 62 (ms)
 ```
 
@@ -132,6 +132,7 @@ Time: 24671.273 ms (00:24.671)
 Now, we'll copy all the data from the kdb+ table and store it in a Postgres table. After that, we'll get Postgres to do the sum of its own data.
 
 ```sql
+postgres=# \timing on
 postgres=# select * into pgtbl from foo('select j from kdbtbl');
 Time: 151502.628 ms (02:31.503)
 
@@ -178,7 +179,7 @@ float[] | F | double precision[]
 
 The extension does support up-casting to data types where there won't be any data loss, for example kdb+ short to Postgres bigint. However there could be precision loss when casting integers to floats.
 
-Note that Postgres does not have a single byte data type, so kdb+ type x should be mapped to a Postgres integer type, where it will be up-casted. 
+Note that Postgres does not have a single-byte data type, so kdb+ type x should be mapped to a Postgres integer type, where it will be up-casted. 
 
 ## Installation
 
@@ -239,14 +240,12 @@ pgtokdb.userpass | user:pass | None provided
 
 Note that configuration settings are read initially when a Postgres process loads the extension. To reread the settings, the process will need to restart.
 
-```
-
 ## Utilities
 Writing wrapper Postgres function and types to specific kdb+ queries is cumbersome, so convenenient utility functions (both kdb+ and Postgres) are provided with the installation.
 
 The kdb+ utilities (`genddl` and `genddle`) are found in the installations `pgtokdb.q` script and are placed in the `.pgtokdb` namespace. 
 
-The example below uses a function (`qfn`) that takes an integer argument, and returns a kdb+ table with 3 columns: a long (j), float (f), and timestamp (p). We want to build the necessary Postgres function that can call this function.
+The example below uses a function (`qfn`) that takes an integer argument, and returns a kdb+ table with three columns: a long (j), float (f), and timestamp (p). We want to build the necessary Postgres function that can call this function.
 
 ```q
 q) qfn:{[n] ([] id:til n; val:n?9999.99; ts:2019.10.01D0+1D*til n)}
@@ -263,6 +262,7 @@ script
 "create type call_qfn_t as (id bigint, val float8, ts timestamp);"
 "create function call_qfn(varchar, integer) returns setof _call_qfn_t as 'pgtokdb','getset' language c;"
 ```
+
 The result is a table containing the necessary DDL scripts. The table's contents can be stored in a text file for execution using psql. Note that the first argument to `call_qfn` above is the kdb+ function (or script) to be invoked.
 
 ```
@@ -294,7 +294,7 @@ postgres=# copy (select * from pgtokdb.genddl(...)) to '/tmp/f.sql';
 
 ## Building the Extension
 
-In order to build the extension, download the Postgres source from [postgres.org] and perform build and install. The Mac and Linux builds are quite straightforward using standard toolsets, however Windows required using Visual Studio and following the instructions on the Postgres site: [Building with Visual C++ or the Microsoft Windows SDK](https://www.postgresql.org/docs/12/install-windows-full.html).
+In order to build the extension, download the Postgres source from [postgres.org](https://www.postgresql.org/) and perform build and install. The Mac and Linux builds are quite straightforward using standard toolsets, however Windows required using Visual Studio and following the instructions on the Postgres site: [Building with Visual C++ or the Microsoft Windows SDK](https://www.postgresql.org/docs/12/install-windows-full.html).
 
 I built the Windows version of Postgres by using Visual Studio 2019 Community Edition, with [ActiveState Perl](https://www.activestate.com/). 
 
@@ -302,8 +302,8 @@ Once you have built and installed Postgres, the `pgtokdb` extension can be built
 
 The makefiles have three targets: clean, all, and install. It is important to have pg_config in the path, since the Linux and Mac makefiles invoke it in order to determine necessary directories (e.g., include, libs, etc.). The Windows makefile has to be provided the value for PGROOT, which is the root directory of Postgres.
 
-* make [clean|**all**|install] [DEBUG=0|**1**]
-* nmake -f makefile.win [clean|all|install] [PGROOT=dir] [DEBUG=0|**1**]
+* make [clean | **all** | install] [DEBUG=0 | **1**]
+* nmake -f makefile.win [clean | **all** | install] [PGROOT=dir] [DEBUG=0 | **1**]
 
 The Windows build requires you to the build inside of the command shell entitled *x64 Native Tools Command Prompt for VS2019*. Furthermore, you should have clang installed, since this is the compiler used. When debugging under Windows, you can use the debugger in Visual Studio, however the pgtokdb.pdb (debug symbols) file should be moved to the same directory as pgtokdb.dll.
 
